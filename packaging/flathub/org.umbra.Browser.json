@@ -1,0 +1,55 @@
+{
+  "app-id": "org.umbra.Browser",
+  "runtime": "org.freedesktop.Platform",
+  "runtime-version": "24.08",
+  "sdk": "org.freedesktop.Sdk",
+  "command": "umbra",
+  "finish-args": [
+    "--share=network",
+    "--share=ipc",
+    "--socket=wayland",
+    "--socket=fallback-x11",
+    "--socket=pulseaudio",
+    "--device=dri",
+    "--filesystem=xdg-download"
+  ],
+  "modules": [
+    {
+      "name": "umbra",
+      "buildsystem": "simple",
+      "build-commands": [
+        "install -d /app/lib/umbra /app/bin",
+        "cp -a . /app/lib/umbra",
+        "ln -sf /app/lib/umbra/umbra /app/bin/umbra",
+        "install -Dm0644 org.umbra.Browser.desktop /app/share/applications/org.umbra.Browser.desktop",
+        "install -Dm0644 org.umbra.Browser.metainfo.xml /app/share/metainfo/org.umbra.Browser.metainfo.xml",
+        "install -Dm0644 org.umbra.Browser.png /app/share/icons/hicolor/256x256/apps/org.umbra.Browser.png",
+        "install -Dm0644 LICENSE /app/share/licenses/$FLATPAK_ID/umbra/LICENSE"
+      ],
+      "sources": [
+        {
+          "type": "archive",
+          "url": "https://example.com/umbra-browser-REPLACE_VERSION-linux-x86_64.tar.xz",
+          "sha256": "REPLACE_WITH_SHA256",
+          "strip-components": 1
+        },
+        {
+          "type": "file",
+          "path": "org.umbra.Browser.desktop"
+        },
+        {
+          "type": "file",
+          "path": "org.umbra.Browser.metainfo.xml"
+        },
+        {
+          "type": "file",
+          "path": "org.umbra.Browser.png"
+        },
+        {
+          "type": "file",
+          "path": "LICENSE"
+        }
+      ]
+    }
+  ]
+}

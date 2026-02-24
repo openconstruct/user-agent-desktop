@@ -1,0 +1,16 @@
+{
+  "title": "Umbra Private Browser",
+  "background": "../brands/Umbra/branding/background.png",
+  "icon": "../brands/Umbra/branding/disk.icns",
+  "icon-size": 80,
+  "window": {
+    "size": {
+        "width": 575,
+        "height": 400
+    }
+  },
+  "contents": [
+    { "x": 429, "y": 210, "type": "link", "path": "/Applications" },
+    { "x": 143, "y": 210, "type": "file", "path": "pkg/Umbra Private Browser.app" }
+  ]
+}

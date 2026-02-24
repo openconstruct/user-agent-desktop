@@ -1,0 +1,51 @@
+From: Umbra Dev <dev@umbra.local>
+Date: Tue, 24 Feb 2026 17:00:00 -0500
+Subject: [PATCH] Package Umbra runtime config and enterprise policies
+
+---
+ browser/installer/package-manifest.in | 5 +++++
+ moz.build                             | 2 ++
+ umbra/moz.build                       | 9 +++++++++
+ 3 files changed, 16 insertions(+)
+ create mode 100644 umbra/moz.build
+
+diff --git a/browser/installer/package-manifest.in b/browser/installer/package-manifest.in
+--- a/browser/installer/package-manifest.in
++++ b/browser/installer/package-manifest.in
+@@ -266,6 +266,11 @@
+ ; Remote Settings JSON dumps
+ @RESPATH@/browser/defaults/settings
+ 
++; Umbra runtime config + enterprise policies.
++@RESPATH@/defaults/pref/autoconfig.js
++@RESPATH@/distribution/policies.json
++@RESPATH@/umbra.cfg
++
+ # channel-prefs.js has been removed on macOS.
+ #ifndef XP_MACOSX
+ ; Warning: changing the path to channel-prefs.js can cause bugs (Bug 756325)
+diff --git a/moz.build b/moz.build
+--- a/moz.build
++++ b/moz.build
+@@ -245,3 +245,5 @@ SPHINX_TREES["content-security"] = "docs/content-security"
+ SPHINX_TREES["jsloader"] = "docs/jsloader"
+ 
+ include("build/templates.mozbuild")
++
++DIRS += ["umbra"]
+diff --git a/umbra/moz.build b/umbra/moz.build
+new file mode 100644
+--- /dev/null
++++ b/umbra/moz.build
+@@ -0,0 +1,9 @@
++FINAL_TARGET_FILES += [
++  "umbra.cfg",
++]
++
++FINAL_TARGET_FILES.distribution += [
++  "policies.json",
++]
++
++FINAL_TARGET_FILES.defaults.pref += ["autoconfig.js"]
+-- 
+2.53.0

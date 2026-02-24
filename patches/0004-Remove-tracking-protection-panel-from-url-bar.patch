@@ -1,0 +1,109 @@
+From: Sam Macbeth <sam@cliqz.com>
+Date: Fri, 11 Sep 2020 15:34:04 +0200
+Subject: Remove tracking protection panel from url bar
+
+---
+ browser/base/content/browser-init.js         |  4 ++--
+ browser/base/content/browser-siteIdentity.js |  8 ++++----
+ browser/base/content/browser.js              | 16 ++++++++--------
+ browser/base/content/browser.xhtml           |  2 +-
+ 4 files changed, 15 insertions(+), 15 deletions(-)
+
+diff --git a/browser/base/content/browser-init.js b/browser/base/content/browser-init.js
+index d2da9018d6..4252b65ca1 100644
+--- a/browser/base/content/browser-init.js
++++ b/browser/base/content/browser-init.js
+@@ -402,7 +402,7 @@ var gBrowserInit = {
+ 
+     BookmarkingUI.init();
+     gURLBar.delayedStartupInit();
+-    gProtectionsHandler.init();
++    // gProtectionsHandler.init();
+ 
+     let safeMode = document.getElementById("helpSafeMode");
+     if (Services.appinfo.inSafeMode) {
+@@ -1057,7 +1057,7 @@ var gBrowserInit = {
+       Services.prefs.removeObserver(ctrlTab.prefName, ctrlTab);
+       ctrlTab.uninit();
+       gBrowserThumbnails.uninit();
+-      gProtectionsHandler.uninit();
++      // gProtectionsHandler.uninit();
+       FullZoom.destroy();
+ 
+       Services.obs.removeObserver(gIdentityHandler, "perm-changed");
+diff --git a/browser/base/content/browser-siteIdentity.js b/browser/base/content/browser-siteIdentity.js
+index 77b6c61b76..eb2af1f167 100644
+--- a/browser/base/content/browser-siteIdentity.js
++++ b/browser/base/content/browser-siteIdentity.js
+@@ -951,10 +951,10 @@ var gIdentityHandler = {
+     }
+ 
+     // Hide the shield icon if it is a chrome page.
+-    gProtectionsHandler._trackingProtectionIconContainer.classList.toggle(
+-      "chromeUI",
+-      this._isSecureInternalUI
+-    );
++    // gProtectionsHandler._trackingProtectionIconContainer.classList.toggle(
++    //   "chromeUI",
++    //   this._isSecureInternalUI
++    // );
+   },
+ 
+   /**
+diff --git a/browser/base/content/browser.js b/browser/base/content/browser.js
+index e586f85545..77379166c7 100644
+--- a/browser/base/content/browser.js
++++ b/browser/base/content/browser.js
+@@ -2039,7 +2039,7 @@ var XULBrowserWindow = {
+     const nsIWebProgressListener = Ci.nsIWebProgressListener;
+ 
+     let browser = gBrowser.selectedBrowser;
+-    gProtectionsHandler.onStateChange(aWebProgress, aStateFlags);
++    // gProtectionsHandler.onStateChange(aWebProgress, aStateFlags);
+ 
+     if (
+       aStateFlags & nsIWebProgressListener.STATE_START &&
+@@ -2235,7 +2235,7 @@ var XULBrowserWindow = {
+ 
+     gPermissionPanel.onLocationChange();
+ 
+-    gProtectionsHandler.onLocationChange();
++    // gProtectionsHandler.onLocationChange();
+ 
+     BrowserPageActions.onLocationChange();
+ 
+@@ -2486,12 +2486,12 @@ var XULBrowserWindow = {
+       );
+     }
+ 
+-    gProtectionsHandler.onContentBlockingEvent(
+-      aEvent,
+-      aWebProgress,
+-      aIsSimulated,
+-      this._event // previous content blocking event
+-    );
++    // gProtectionsHandler.onContentBlockingEvent(
++    //   aEvent,
++    //   aWebProgress,
++    //   aIsSimulated,
++    //   this._event // previous content blocking event
++    // );
+ 
+     // We need the state of the previous content blocking event, so update
+     // event after onContentBlockingEvent is called.
+diff --git a/browser/base/content/browser.xhtml b/browser/base/content/browser.xhtml
+index d89b3bbb99..5db767b2f4 100644
+--- a/browser/base/content/browser.xhtml
++++ b/browser/base/content/browser.xhtml
+@@ -76,7 +76,7 @@
+   <link rel="localization" href="browser/originControls.ftl"/>
+   <link rel="localization" href="browser/panelUI.ftl"/>
+   <link rel="localization" href="browser/places.ftl"/>
+-  <link rel="localization" href="browser/protectionsPanel.ftl"/>
++  <!-- <link rel="localization" href="browser/protectionsPanel.ftl"/> -->
+   <link rel="localization" href="browser/reportBrokenSite.ftl"/>
+   <link rel="localization" href="browser/screenshots.ftl"/>
+   <link rel="localization" href="browser/search.ftl"/>
+-- 
+2.52.0
+

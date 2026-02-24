@@ -1,0 +1,31 @@
+
+ac_add_options --with-app-basename=Umbra
+ac_add_options --with-branding=browser/branding/Umbra
+ac_add_options --enable-update-channel=release
+ac_add_options --enable-unverified-updates
+
+
+ac_add_options --disable-backgroundtasks
+ac_add_options --disable-crashreporter
+ac_add_options MOZ_TELEMETRY_REPORTING=
+ac_add_options --enable-hardening
+ac_add_options --enable-sandbox
+ac_add_options --enable-proxy-bypass-protection
+ac_add_options --disable-proxy-direct-failover
+ac_add_options --enable-disk-remnant-avoidance
+ac_add_options --disable-system-extension-dirs
+ac_add_options --with-libclang-path=/usr/lib64
+ac_add_options --with-distribution-id=com.umbra.browser
+
+# WASI SDK for wasm sandboxed libraries.
+# Override with: export WASI_SDK_PATH=/abs/path/to/wasi-sdk
+if [ -z "$WASI_SDK_PATH" ]; then
+  WASI_SDK_PATH="$HOME/.local/wasi-sdk"
+fi
+
+ac_add_options --with-wasi-sysroot=$WASI_SDK_PATH/share/wasi-sysroot
+export WASM_CC=$WASI_SDK_PATH/bin/clang
+export WASM_CXX=$WASI_SDK_PATH/bin/clang++
+
+export ACCEPTED_MAR_CHANNEL_IDS=firefox-umbra-release
+export MAR_CHANNEL_ID=firefox-umbra-release

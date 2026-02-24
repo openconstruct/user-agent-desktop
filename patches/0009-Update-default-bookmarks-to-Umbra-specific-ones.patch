@@ -1,0 +1,34 @@
+From: Umbra Dev <dev@umbra.local>
+Date: Sat, 21 Feb 2026 19:02:00 -0500
+Subject: Remove preset default bookmarks for release builds
+
+---
+ browser/base/content/default-bookmarks.html | 10 ----------
+ 1 file changed, 10 deletions(-)
+
+diff --git a/browser/base/content/default-bookmarks.html b/browser/base/content/default-bookmarks.html
+index 2f764caf6f..f7edfdeea5 100644
+--- a/browser/base/content/default-bookmarks.html
++++ b/browser/base/content/default-bookmarks.html
+@@ -29,17 +29,7 @@
+ 
+ <dl><p>
+ #ifndef NIGHTLY_BUILD
+-    <dt><h3 data-l10n-id="default-bookmarks-firefox-heading">default-bookmarks-firefox-heading</h3></dt>
+-        <dl><p>
+-            <dt><a href="https://support.mozilla.org/products/firefox" icon="@firefox_icon@" data-l10n-id="default-bookmarks-firefox-get-help">default-bookmarks-firefox-get-help</a></dt>
+-            <dt><a href="https://support.mozilla.org/kb/customize-firefox-controls-buttons-and-toolbars?utm_source=firefox-browser&utm_medium=default-bookmarks&utm_campaign=customize" icon="@firefox_icon@" data-l10n-id="default-bookmarks-firefox-customize">default-bookmarks-firefox-customize</a></dt>
+-#ifdef EARLY_BETA_OR_EARLIER
+-            <dt><a href="https://www.mozilla.org/contribute/?utm_medium=firefox-desktop&utm_source=bookmarks-toolbar&utm_campaign=new-users-beta&utm_content=-global" icon="@mozilla_icon@" data-l10n-id="default-bookmarks-firefox-community">default-bookmarks-firefox-community</a></dt>
+-#else
+-            <dt><a href="https://www.mozilla.org/contribute/" icon="@mozilla_icon@" data-l10n-id="default-bookmarks-firefox-community">default-bookmarks-firefox-community</a></dt>
+-#endif
+-            <dt><a href="https://www.mozilla.org/about/" icon="@mozilla_icon@" data-l10n-id="default-bookmarks-firefox-about">default-bookmarks-firefox-about</a></dt>
+-        </dl><p>
++    <!-- Intentionally no default bookmarks for Umbra release builds. -->
+ #else
+     <dt><h3 data-l10n-id="default-bookmarks-nightly-heading">default-bookmarks-nightly-heading</h3></dt>
+         <dl><p>
+-- 
+2.52.0
+

@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>org.umbra.Browser</id>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>MPL-2.0</project_license>
+  <name>Umbra Browser</name>
+  <summary>Privacy-focused web browser based on Firefox ESR</summary>
+
+  <developer id="org.umbra">
+    <name>Umbra Browser Contributors</name>
+  </developer>
+
+  <launchable type="desktop-id">org.umbra.Browser.desktop</launchable>
+  <url type="homepage">https://github.com/REPLACE_WITH_ORG/umbra</url>
+  <url type="bugtracker">https://github.com/REPLACE_WITH_ORG/umbra/issues</url>
+
+  <description>
+    <p>
+      Umbra Browser is a privacy-focused browser built on Firefox ESR with hardened defaults,
+      optional DRM support, and distribution-friendly Linux packaging.
+    </p>
+  </description>
+
+  <categories>
+    <category>Network</category>
+    <category>WebBrowser</category>
+  </categories>
+
+  <screenshots>
+    <screenshot type="default">
+      <image>https://raw.githubusercontent.com/REPLACE_WITH_ORG/umbra/main/docs/screenshots/umbra-main.png</image>
+      <caption>Umbra Browser main window</caption>
+    </screenshot>
+  </screenshots>
+
+  <content_rating type="oars-1.1"/>
+</component>
+

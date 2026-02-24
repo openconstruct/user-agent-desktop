@@ -1,0 +1,101 @@
+From b8f024a59c72c50c5a896b42df9a8c0131db3321 Mon Sep 17 00:00:00 2001
+From: Jenkins <jenkins@magrathea>
+Date: Sat, 21 Feb 2026 21:50:40 -0500
+Subject: Remove recommended stories from Home preferences UI
+
+---
+ browser/components/preferences/home.inc.xhtml |  1 -
+ .../newtab/lib/AboutPreferences.sys.mjs       | 51 -------------------
+ 2 files changed, 52 deletions(-)
+
+diff --git a/browser/components/preferences/home.inc.xhtml b/browser/components/preferences/home.inc.xhtml
+index bee361923a..ff68a50a1e 100644
+--- a/browser/components/preferences/home.inc.xhtml
++++ b/browser/components/preferences/home.inc.xhtml
+@@ -117,7 +117,6 @@
+   <vbox id="search" />
+   <vbox id="weather" />
+   <vbox id="topsites" />
+-  <vbox id="topstories" />
+   <vbox id="support-firefox" />
+ 
+   <html:moz-box-item class="mission-message">
+diff --git a/browser/extensions/newtab/lib/AboutPreferences.sys.mjs b/browser/extensions/newtab/lib/AboutPreferences.sys.mjs
+index a62c4933a5..04e711b143 100644
+--- a/browser/extensions/newtab/lib/AboutPreferences.sys.mjs
++++ b/browser/extensions/newtab/lib/AboutPreferences.sys.mjs
+@@ -61,43 +61,6 @@ const PREFS_FOR_SETTINGS = () => [
+     rowsPref: "topSitesRows",
+     eventSource: "TOP_SITES",
+   },
+-  {
+-    id: "topstories",
+-    pref: {
+-      feed: "feeds.section.topstories",
+-      titleString: {
+-        id: "home-prefs-recommended-by-header-generic",
+-      },
+-      descString: {
+-        id: "home-prefs-recommended-by-description-generic",
+-      },
+-      nestedPrefs: [
+-        ...(Services.prefs.getBoolPref(
+-          "browser.newtabpage.activity-stream.system.showSponsored",
+-          true
+-        ) && // Hide this nested pref if "Support Firefox" checkbox is enabled
+-        !Services.prefs.getBoolPref(
+-          "browser.newtabpage.activity-stream.system.showSponsoredCheckboxes",
+-          false
+-        )
+-          ? [
+-              {
+-                name: "showSponsored",
+-                titleString:
+-                  "home-prefs-recommended-by-option-sponsored-stories",
+-                icon: "icon-info",
+-                eventSource: "POCKET_SPOCS",
+-              },
+-            ]
+-          : []),
+-      ],
+-    },
+-    shouldHidePref: !Services.prefs.getBoolPref(
+-      "browser.newtabpage.activity-stream.feeds.system.topstories",
+-      true
+-    ),
+-    eventSource: "TOP_STORIES",
+-  },
+   {
+     id: "support-firefox",
+     pref: {
+@@ -109,19 +72,6 @@ const PREFS_FOR_SETTINGS = () => [
+           titleString: "home-prefs-shortcuts-by-option-sponsored",
+           eventSource: "SPONSORED_TOP_SITES",
+         },
+-        {
+-          name: "showSponsored",
+-          titleString: "home-prefs-recommended-by-option-sponsored-stories",
+-          eventSource: "POCKET_SPOCS",
+-          shouldHidePref: !Services.prefs.getBoolPref(
+-            "browser.newtabpage.activity-stream.feeds.system.topstories",
+-            true
+-          ),
+-          shouldDisablePref: !Services.prefs.getBoolPref(
+-            "browser.newtabpage.activity-stream.feeds.section.topstories",
+-            true
+-          ),
+-        },
+       ],
+     },
+     shouldHidePref: !Services.prefs.getBoolPref(
+@@ -351,7 +301,6 @@ export class AboutPreferences {
+         });
+       }
+ 
+-      setupSupportFirefoxSubCheck("feeds.section.topstories", "showSponsored");
+       setupSupportFirefoxSubCheck("feeds.topsites", "showSponsoredTopSites");
+     }
+ 
+-- 
+2.53.0
+

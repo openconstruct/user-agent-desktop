@@ -1,0 +1,277 @@
+From 78cc94846cb1d9761047537ce64ac3557953d0c1 Mon Sep 17 00:00:00 2001
+From: Jenkins <jenkins@magrathea>
+Date: Sat, 21 Feb 2026 20:55:31 -0500
+Subject: Enable speed-dial new tab and custom Home/New Tab URLs
+
+---
+ browser/components/preferences/home.inc.xhtml |  18 +++
+ browser/components/preferences/home.js        | 151 +++++++++++++-----
+ .../themes/shared/preferences/preferences.css |   5 +
+ 3 files changed, 137 insertions(+), 37 deletions(-)
+
+diff --git a/browser/components/preferences/home.inc.xhtml b/browser/components/preferences/home.inc.xhtml
+index ac15f8e9c5..bee361923a 100644
+--- a/browser/components/preferences/home.inc.xhtml
++++ b/browser/components/preferences/home.inc.xhtml
+@@ -84,8 +84,26 @@
+         <menupopup>
+           <menuitem value="0" data-l10n-id="home-mode-choice-default-fx" />
+           <menuitem value="1" data-l10n-id="home-mode-choice-blank" />
++          <menuitem value="2" data-l10n-id="home-mode-choice-custom" />
+         </menupopup>
+       </menulist>
++      <vbox id="newTabCustomSettings" hidden="true">
++        <box role="combobox">
++          <html:input id="newTabUrl"
++                      type="text"
++                      is="autocomplete-input"
++                      class="uri-element"
++                      style="flex: 1;"
++                      data-l10n-id="home-homepage-custom-url"
++                      autocompletepopup="newTabUrlAutocomplete" />
++          <popupset>
++            <panel id="newTabUrlAutocomplete"
++                   is="autocomplete-richlistbox-popup"
++                   type="autocomplete-richlistbox"
++                   noautofocus="true"/>
++          </popupset>
++        </box>
++      </vbox>
+     </vbox>
+   </hbox>
+ </groupbox>
+diff --git a/browser/components/preferences/home.js b/browser/components/preferences/home.js
+index 883ab42210..d9033e28e8 100644
+--- a/browser/components/preferences/home.js
++++ b/browser/components/preferences/home.js
+@@ -38,6 +38,9 @@ var gHomePane = {
+   HOME_MODE_FIREFOX_HOME: "0",
+   HOME_MODE_BLANK: "1",
+   HOME_MODE_CUSTOM: "2",
++  NEWTAB_MODE_DEFAULT: "0",
++  NEWTAB_MODE_BLANK: "1",
++  NEWTAB_MODE_CUSTOM: "2",
+   HOMEPAGE_PREF: "browser.startup.homepage",
+   NEWTAB_ENABLED_PREF: "browser.newtabpage.enabled",
+   ACTIVITY_STREAM_PREF_BRANCH: "browser.newtabpage.activity-stream.",
+@@ -64,69 +67,102 @@ var gHomePane = {
+     return false;
+   },
+ 
++  _isBuiltInNewTabURL(url) {
++    return [BLANK_HOMEPAGE_URL, "about:blank", "about:newtab"].includes(url);
++  },
++
+   async syncToNewTabPref() {
+     let menulist = document.getElementById("newTabMode");
++    let selectedAddon = ExtensionSettingsStore.getSetting(
++      URL_OVERRIDES_TYPE,
++      NEW_TAB_KEY
++    );
++    const currentValue = menulist.value;
+ 
+-    if (["0", "1"].includes(menulist.value)) {
+-      let newtabEnabledPref = Services.prefs.getBoolPref(
+-        this.NEWTAB_ENABLED_PREF,
+-        true
+-      );
+-      let newValue = menulist.value !== this.HOME_MODE_BLANK;
+-      // Only set this if the pref has changed, otherwise the pref change will trigger other listeners to repeat.
+-      if (newtabEnabledPref !== newValue) {
+-        Services.prefs.setBoolPref(this.NEWTAB_ENABLED_PREF, newValue);
++    if (currentValue === this.NEWTAB_MODE_DEFAULT) {
++      Services.prefs.setBoolPref(this.NEWTAB_ENABLED_PREF, true);
++      if (selectedAddon) {
++        ExtensionSettingsStore.select(null, URL_OVERRIDES_TYPE, NEW_TAB_KEY);
+       }
+-      let selectedAddon = ExtensionSettingsStore.getSetting(
+-        URL_OVERRIDES_TYPE,
+-        NEW_TAB_KEY
+-      );
++      if (AboutNewTab.newTabURLOverridden) {
++        AboutNewTab.resetNewTabURL();
++      }
++      this._renderNewTabCustomSettings({ shouldShow: false });
++      return;
++    }
++
++    if (currentValue === this.NEWTAB_MODE_BLANK) {
++      Services.prefs.setBoolPref(this.NEWTAB_ENABLED_PREF, false);
+       if (selectedAddon) {
+         ExtensionSettingsStore.select(null, URL_OVERRIDES_TYPE, NEW_TAB_KEY);
+       }
+-    } else {
+-      let addon = await AddonManager.getAddonByID(menulist.value);
+-      if (addon && addon.isActive) {
+-        ExtensionSettingsStore.select(
+-          addon.id,
+-          URL_OVERRIDES_TYPE,
+-          NEW_TAB_KEY
+-        );
++      if (AboutNewTab.newTabURLOverridden) {
++        AboutNewTab.resetNewTabURL();
+       }
++      this._renderNewTabCustomSettings({ shouldShow: false });
++      return;
+     }
++
++    if (currentValue === this.NEWTAB_MODE_CUSTOM) {
++      Services.prefs.setBoolPref(this.NEWTAB_ENABLED_PREF, true);
++      if (selectedAddon) {
++        ExtensionSettingsStore.select(null, URL_OVERRIDES_TYPE, NEW_TAB_KEY);
++      }
++      this._renderNewTabCustomSettings({ shouldShow: true });
++      this.onCustomNewTabPageChange({
++        target: document.getElementById("newTabUrl"),
++      });
++      return;
++    }
++
++    let addon = await AddonManager.getAddonByID(currentValue);
++    if (addon && addon.isActive) {
++      ExtensionSettingsStore.select(addon.id, URL_OVERRIDES_TYPE, NEW_TAB_KEY);
++    }
++    this._renderNewTabCustomSettings({ shouldShow: false });
+   },
+ 
+   async syncFromNewTabPref() {
+     let menulist = document.getElementById("newTabMode");
++    const currentURL = AboutNewTab.newTabURL;
++    const builtInURL = this._isBuiltInNewTabURL(currentURL);
++    let selectedAddon = ExtensionSettingsStore.getSetting(
++      URL_OVERRIDES_TYPE,
++      NEW_TAB_KEY
++    );
+ 
+-    // If the new tab url was changed to about:blank or about:newtab
+-    if (
+-      AboutNewTab.newTabURL === "about:newtab" ||
+-      AboutNewTab.newTabURL === "about:blank" ||
+-      AboutNewTab.newTabURL === BLANK_HOMEPAGE_URL
+-    ) {
++    if (builtInURL) {
+       let newtabEnabledPref = Services.prefs.getBoolPref(
+         this.NEWTAB_ENABLED_PREF,
+         true
+       );
+       let newValue = newtabEnabledPref
+-        ? this.HOME_MODE_FIREFOX_HOME
+-        : this.HOME_MODE_BLANK;
++        ? this.NEWTAB_MODE_DEFAULT
++        : this.NEWTAB_MODE_BLANK;
+       if (newValue !== menulist.value) {
+         menulist.value = newValue;
+       }
+       menulist.disabled = Preferences.get(this.NEWTAB_ENABLED_PREF).locked;
+-      // If change was triggered by installing an addon we need to update
+-      // the value of the menulist to be that addon.
+-    } else {
+-      let selectedAddon = ExtensionSettingsStore.getSetting(
+-        URL_OVERRIDES_TYPE,
+-        NEW_TAB_KEY
+-      );
+-      if (selectedAddon && menulist.value !== selectedAddon.id) {
++      this._renderNewTabCustomSettings({ shouldShow: false });
++      return;
++    }
++
++    if (selectedAddon) {
++      if (menulist.value !== selectedAddon.id) {
+         menulist.value = selectedAddon.id;
+       }
++      this._renderNewTabCustomSettings({ shouldShow: false });
++      return;
+     }
++
++    if (menulist.value !== this.NEWTAB_MODE_CUSTOM) {
++      menulist.value = this.NEWTAB_MODE_CUSTOM;
++    }
++    menulist.disabled = Preferences.get(this.NEWTAB_ENABLED_PREF).locked;
++    this._renderNewTabCustomSettings({
++      shouldShow: true,
++      value: currentURL,
++    });
+   },
+ 
+   /**
+@@ -599,6 +635,7 @@ var gHomePane = {
+     this._handleHomePageOverrides();
+     Services.prefs.clearUserPref(this.NEWTAB_ENABLED_PREF);
+     AboutNewTab.resetNewTabURL();
++    this._renderNewTabCustomSettings({ shouldShow: false });
+   },
+ 
+   onCustomHomePageChange(event) {
+@@ -606,6 +643,43 @@ var gHomePane = {
+     HomePage.set(value).catch(console.error);
+   },
+ 
++  _renderNewTabCustomSettings(options = {}) {
++    let { shouldShow, value } = options;
++    const customSettingsContainerEl = document.getElementById(
++      "newTabCustomSettings"
++    );
++    const customUrlEl = document.getElementById("newTabUrl");
++    const isCustom = !this._isBuiltInNewTabURL(AboutNewTab.newTabURL);
++
++    if (typeof shouldShow === "undefined") {
++      shouldShow = isCustom;
++    }
++    customSettingsContainerEl.hidden = !shouldShow;
++
++    if (typeof value === "undefined") {
++      value = isCustom ? AboutNewTab.newTabURL : "";
++    }
++    if (customUrlEl.value !== value) {
++      customUrlEl.value = value;
++    }
++  },
++
++  onCustomNewTabPageChange(event) {
++    const rawValue = (event.target.value || "").trim();
++    if (!rawValue) {
++      return;
++    }
++
++    let value = rawValue;
++    if (!/^[a-zA-Z][a-zA-Z0-9+.-]*:/.test(value)) {
++      value = `https://${value}`;
++    }
++
++    if (value !== AboutNewTab.newTabURL) {
++      AboutNewTab.newTabURL = value;
++    }
++  },
++
+   /**
+    * Check all Home Tab preferences for user set values.
+    */
+@@ -678,6 +752,9 @@ var gHomePane = {
+     document
+       .getElementById("newTabMode")
+       .addEventListener("command", this.syncToNewTabPref.bind(this));
++    document
++      .getElementById("newTabUrl")
++      .addEventListener("change", this.onCustomNewTabPageChange.bind(this));
+     document
+       .getElementById("homeMode")
+       .addEventListener("command", this.onMenuChange.bind(this));
+diff --git a/browser/themes/shared/preferences/preferences.css b/browser/themes/shared/preferences/preferences.css
+index 1e263705b2..a5b119dcf1 100644
+--- a/browser/themes/shared/preferences/preferences.css
++++ b/browser/themes/shared/preferences/preferences.css
+@@ -158,6 +158,11 @@ radio {
+   white-space: nowrap;
+ }
+ 
++#category-more-from-mozilla,
++#helpButton {
++  display: none;
++}
++
+ .accessory-button {
+   min-width: 150px;
+   margin: 4px 0;
+-- 
+2.53.0
+
