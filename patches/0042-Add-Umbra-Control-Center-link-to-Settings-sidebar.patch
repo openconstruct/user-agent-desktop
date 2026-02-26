@@ -1,0 +1,19 @@
+From: Umbra Dev <dev@umbra.local>
+Date: Tue, 24 Feb 2026 04:20:35 -0500
+Subject: Add Umbra Control Center link to Settings sidebar
+
+diff --git a/browser/components/preferences/preferences.xhtml b/browser/components/preferences/preferences.xhtml
+index 04c8a45a67..088c726f0d 100644
+--- a/browser/components/preferences/preferences.xhtml
++++ b/browser/components/preferences/preferences.xhtml
+@@ -204,6 +204,10 @@
+           <image class="sidebar-footer-icon addons-icon"/>
+           <label class="sidebar-footer-label" flex="1" data-l10n-id="addons-button-label"></label>
+         </html:a>
++        <html:a id="umbraControlCenterButton" class="sidebar-footer-link" href="about:umbra">
++          <image class="sidebar-footer-icon addons-icon"/>
++          <label class="sidebar-footer-label" flex="1" value="Umbra Control Center"></label>
++        </html:a>
+         <html:a id="helpButton" class="sidebar-footer-link" target="_blank"
+                 is="moz-support-link" support-page="preferences">
+           <image class="sidebar-footer-icon help-icon"/>

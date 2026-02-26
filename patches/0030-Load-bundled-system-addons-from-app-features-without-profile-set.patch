@@ -1,0 +1,161 @@
+From f5c74fb3a626846c54138ca5d681c963d3248627 Mon Sep 17 00:00:00 2001
+From: Jenkins <jenkins@magrathea>
+Date: Sat, 21 Feb 2026 22:02:56 -0500
+Subject: [PATCH] Load bundled system addons from app features when no profile
+ set
+
+---
+ .../extensions/internal/XPIProvider.sys.mjs   | 77 +++++++++++++++++--
+ 1 file changed, 72 insertions(+), 5 deletions(-)
+
+diff --git a/toolkit/mozapps/extensions/internal/XPIProvider.sys.mjs b/toolkit/mozapps/extensions/internal/XPIProvider.sys.mjs
+index cfacbd6e67..cf260e25c8 100644
+--- a/toolkit/mozapps/extensions/internal/XPIProvider.sys.mjs
++++ b/toolkit/mozapps/extensions/internal/XPIProvider.sys.mjs
+@@ -1243,6 +1243,7 @@ class SystemAddonLocation extends DirectoryLocation {
+   constructor(name, dir, scope, appChanged) {
+     let addonSet = SystemAddonLocation._loadAddonSet();
+     let directory = null;
++    let bundledSystemAddonDir = null;
+ 
+     // The system add-on update directory is stored in a pref.
+     // Therefore, this is looked up before calling the
+@@ -1251,13 +1252,21 @@ class SystemAddonLocation extends DirectoryLocation {
+       directory = getFile(addonSet.directory, dir);
+       logger.info(`SystemAddonLocation scanning directory ${directory.path}`);
+     } else {
+-      logger.info("SystemAddonLocation directory is missing");
++      bundledSystemAddonDir = SystemAddonLocation._getBundledSystemAddonDir();
++      if (bundledSystemAddonDir) {
++        logger.info(
++          `SystemAddonLocation falling back to bundled system addons in ${bundledSystemAddonDir.path}`
++        );
++      } else {
++        logger.info("SystemAddonLocation directory is missing");
++      }
+     }
+ 
+     super(name, directory, scope, false);
+ 
+     this._addonSet = addonSet;
+     this._baseDir = dir;
++    this._bundledSystemAddonDir = bundledSystemAddonDir;
+ 
+     // Resetting system-signed addon set got from Balrog on:
+     // - a startup detected as an application version downgrade
+@@ -1309,12 +1318,62 @@ class SystemAddonLocation extends DirectoryLocation {
+     return { schema: 1, addons: {} };
+   }
+ 
++  static _getBundledSystemAddonDir() {
++    try {
++      const directory = lazy.FileUtils.getDir(KEY_ADDON_APP_DIR, [
++        DIR_SYSTEM_ADDONS,
++      ]);
++      if (directory.exists() && directory.isDirectory()) {
++        return directory;
++      }
++    } catch (e) {}
++
++    return null;
++  }
++
++  static _readBundledSystemAddonIds() {
++    let ids = new Set();
++    let directory = this._getBundledSystemAddonDir();
++    if (!directory) {
++      return ids;
++    }
++
++    for (let entry of Array.from(iterDirectory(directory))) {
++      let id = getExpectedID(entry);
++      if (id) {
++        ids.add(id);
++      }
++    }
++
++    return ids;
++  }
++
++  _readBundledSystemAddons() {
++    let addons = new Map();
++    if (!this._bundledSystemAddonDir) {
++      return addons;
++    }
++
++    for (let entry of Array.from(iterDirectory(this._bundledSystemAddonDir))) {
++      let id = getExpectedID(entry);
++      if (id) {
++        addons.set(id, entry);
++      }
++    }
++
++    return addons;
++  }
++
+   readAddons() {
+     // Updated system add-ons are ignored in safe mode
+     if (Services.appinfo.inSafeMode) {
+       return new Map();
+     }
+ 
++    if (!this.dir) {
++      return this._readBundledSystemAddons();
++    }
++
+     let addons = super.readAddons();
+ 
+     // Strip out any unexpected add-ons from the list
+@@ -1333,7 +1392,7 @@ class SystemAddonLocation extends DirectoryLocation {
+    * @returns {boolean}
+    */
+   isActive() {
+-    return this.dir != null;
++    return this.dir != null || this._bundledSystemAddonDir != null;
+   }
+ 
+   get isSystem() {
+@@ -1557,7 +1616,15 @@ var XPIStates = {
+         startupScanScopes & AddonManager.SCOPE_APPLICATION;
+       const hasScopeProfile = startupScanScopes & AddonManager.SCOPE_PROFILE;
+       const systemAddonSet = SystemAddonLocation._loadAddonSet();
++      const bundledSystemAddonIds =
++        SystemAddonLocation._readBundledSystemAddonIds();
++      const hasBundledSystemAddons = bundledSystemAddonIds.size > 0;
+       const hasSystemAddonDirectory = !!systemAddonSet.directory;
++      const expectedSystemAddonIds = hasSystemAddonDirectory
++        ? new Set(Object.keys(systemAddonSet.addons ?? {}))
++        : bundledSystemAddonIds;
++      const hasExpectedSystemAddons =
++        hasSystemAddonDirectory || hasBundledSystemAddons;
+       const getMissingIds = ({ knownIds, expectedIds }) => {
+         return new Set(expectedIds).difference(new Set(knownIds));
+       };
+@@ -1586,7 +1653,7 @@ var XPIStates = {
+ 
+       // Recover from lost or stale XPIStates data for the "app-system-addons" location.
+       if (
+-        hasSystemAddonDirectory &&
++        hasExpectedSystemAddons &&
+         !hasScopeProfile &&
+         !oldLocations.has(KEY_APP_SYSTEM_ADDONS)
+       ) {
+@@ -1594,13 +1661,13 @@ var XPIStates = {
+           `Force scan SCOPE_PROFILE (${KEY_APP_SYSTEM_ADDONS} location missing from XPIStates)`
+         );
+         startupScanScopes |= AddonManager.SCOPE_PROFILE;
+-      } else if (hasSystemAddonDirectory && !hasScopeProfile) {
++      } else if (hasExpectedSystemAddons && !hasScopeProfile) {
+         // Detect stale/incomplete location data.
+         const missingIds = getMissingIds({
+           knownIds: new Set(
+             Object.keys(oldState[KEY_APP_SYSTEM_ADDONS].addons ?? {})
+           ),
+-          expectedIds: new Set(Object.keys(systemAddonSet.addons ?? {})),
++          expectedIds: expectedSystemAddonIds,
+         });
+         if (missingIds.size) {
+           logger.warn(
+-- 
+2.53.0
+

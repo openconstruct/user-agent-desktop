@@ -1,0 +1,13 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=Umbra Browser
+GenericName=Web Browser
+Comment=Browse the Web with Umbra
+Exec=umbra %u
+Terminal=false
+Icon=umbra
+Categories=Network;WebBrowser;
+MimeType=text/html;text/xml;application/xhtml+xml;x-scheme-handler/http;x-scheme-handler/https;
+StartupNotify=true
+StartupWMClass=umbra

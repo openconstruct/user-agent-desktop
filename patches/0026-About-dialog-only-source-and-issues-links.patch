@@ -1,0 +1,49 @@
+From: Umbra Dev <dev@umbra.local>
+Date: Sat, 21 Feb 2026 18:50:00 -0500
+Subject: About dialog: keep only source and issue links
+
+---
+ browser/base/content/aboutDialog.xhtml | 9 ++++-----
+ 1 file changed, 4 insertions(+), 5 deletions(-)
+
+diff --git a/browser/base/content/aboutDialog.xhtml b/browser/base/content/aboutDialog.xhtml
+index c649808105..24b50032f9 100644
+--- a/browser/base/content/aboutDialog.xhtml
++++ b/browser/base/content/aboutDialog.xhtml
+@@ -102,7 +102,7 @@
+                 <label id="version" class="update"/>
+                 <label id="releasenotes" is="text-link" hidden="true" data-l10n-id="releaseNotes-link"/>
+               </hbox>
+-              <description class="text-blurb">
++              <description class="text-blurb" hidden="true">
+                 <label id="aboutDialogHelpLink" is="text-link" data-l10n-id="aboutdialog-help-user"/>
+                 <label id="submit-feedback" is="text-link" data-l10n-id="aboutdialog-submit-feedback"/>
+               </description>
+@@ -124,11 +124,11 @@
+               <label is="text-link" useoriginprincipal="true" href="about:credits" data-l10n-name="community-exp-creditsLink"/>
+             </description>
+           </vbox>
+-          <description class="text-blurb" id="communityDesc" data-l10n-id="community-2">
++          <description class="text-blurb" id="communityDesc" data-l10n-id="community-2" hidden="true">
+            <label is="text-link" href="https://www.mozilla.org/?utm_source=firefox-browser&#38;utm_medium=firefox-desktop&#38;utm_campaign=about-dialog" data-l10n-name="community-mozillaLink"/>
+             <label is="text-link" useoriginprincipal="true" href="about:credits" data-l10n-name="community-creditsLink"/>
+           </description>
+-          <description class="text-blurb" id="contributeDesc" data-l10n-id="helpus">
++          <description class="text-blurb" id="contributeDesc" data-l10n-id="helpus" hidden="true">
+            <label is="text-link" href="https://foundation.mozilla.org/?form=firefox-about" data-l10n-name="helpus-donateLink"/>
+            <label is="text-link" href="https://www.mozilla.org/contribute/?utm_source=firefox-browser&#38;utm_medium=firefox-desktop&#38;utm_campaign=about-dialog" data-l10n-name="helpus-getInvolvedLink"/>
+           </description>
+@@ -137,9 +137,8 @@
+     </hbox>
+     <vbox id="bottomBox">
+       <hbox pack="center">
+-        <label is="text-link" class="bottom-link" useoriginprincipal="true" href="about:license" data-l10n-id="bottomLinks-license"/>
+-        <label is="text-link" class="bottom-link" href="https://www.mozilla.org/about/legal/terms/firefox/" data-l10n-id="bottom-links-terms"/>
+-        <label is="text-link" class="bottom-link" href="https://www.mozilla.org/privacy/firefox/?utm_source=firefox-browser&#38;utm_medium=firefox-desktop&#38;utm_campaign=about-dialog" data-l10n-id="bottom-links-privacy"/>
++        <label is="text-link" class="bottom-link" href="https://github.com/openconstruct/umbra" value="Source Code"/>
++        <label is="text-link" class="bottom-link" href="https://github.com/openconstruct/Umbra/issues" value="Issue Tracker"/>
+       </hbox>
+       <description id="trademark" data-l10n-id="trademarkInfo"></description>
+     </vbox>
+-- 
+2.52.0

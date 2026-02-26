@@ -1,0 +1,23 @@
+From: Sam Macbeth <sam@cliqz.com>
+Date: Fri, 11 Dec 2020 13:54:09 +0100
+Subject: Ignore the glinter
+
+---
+ third_party/python/glean_parser/glean_parser/lint.py | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/third_party/python/glean_parser/glean_parser/lint.py b/third_party/python/glean_parser/glean_parser/lint.py
+index 3605618eee..3e240c51cc 100644
+--- a/third_party/python/glean_parser/glean_parser/lint.py
++++ b/third_party/python/glean_parser/glean_parser/lint.py
+@@ -557,6 +557,7 @@ def lint_metrics(
+     parser_config: Optional[Dict[str, Any]] = None,
+     file=sys.stderr,
+ ) -> List[GlinterNit]:
++    return []
+     """
+     Performs glinter checks on a set of metrics objects.
+ 
+-- 
+2.52.0
+

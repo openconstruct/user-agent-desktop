@@ -1,0 +1,28 @@
+From: Sam Macbeth <sam@cliqz.com>
+Date: Tue, 17 Nov 2020 10:30:32 +0100
+Subject: Hide "Recommend as you browse" preferences
+
+---
+ browser/components/preferences/main.js | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/browser/components/preferences/main.js b/browser/components/preferences/main.js
+index 5878132edf..6cd54650bc 100644
+--- a/browser/components/preferences/main.js
++++ b/browser/components/preferences/main.js
+@@ -325,10 +325,12 @@ Preferences.addSetting({
+ Preferences.addSetting({
+   id: "cfrRecommendations",
+   pref: "browser.newtabpage.activity-stream.asrouter.userprefs.cfr.addons",
++  visible: () => false,
+ });
+ Preferences.addSetting({
+   id: "cfrRecommendations-features",
+   pref: "browser.newtabpage.activity-stream.asrouter.userprefs.cfr.features",
++  visible: () => false,
+ });
+ 
+ let SETTINGS_CONFIG = {
+-- 
+2.52.0
+

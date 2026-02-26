@@ -1,0 +1,40 @@
+From: Sam Macbeth <sam@cliqz.com>
+Date: Wed, 23 Sep 2020 17:02:37 +0200
+Subject: Allow setting service url to be overrided by prefs
+
+---
+ services/settings/Utils.sys.mjs      | 4 +---
+ toolkit/modules/AppConstants.sys.mjs | 2 +-
+ 2 files changed, 2 insertions(+), 4 deletions(-)
+
+diff --git a/services/settings/Utils.sys.mjs b/services/settings/Utils.sys.mjs
+index cbdf07bcda..b5860b823f 100644
+--- a/services/settings/Utils.sys.mjs
++++ b/services/settings/Utils.sys.mjs
+@@ -97,9 +97,7 @@ const _cdnURLs = {};
+ 
+ export var Utils = {
+   get SERVER_URL() {
+-    return lazy.allowServerURLOverride
+-      ? lazy.gServerURL
+-      : AppConstants.REMOTE_SETTINGS_SERVER_URL;
++    return lazy.gServerURL;
+   },
+ 
+   CHANGES_PATH: "/buckets/monitor/collections/changes/changeset",
+diff --git a/toolkit/modules/AppConstants.sys.mjs b/toolkit/modules/AppConstants.sys.mjs
+index a794e82288..80462fbc93 100644
+--- a/toolkit/modules/AppConstants.sys.mjs
++++ b/toolkit/modules/AppConstants.sys.mjs
+@@ -218,7 +218,7 @@ export var AppConstants = Object.freeze({
+ #ifdef MOZ_THUNDERBIRD
+     false,
+ #else
+-    true,
++    false,
+ #endif
+ 
+   REMOTE_SETTINGS_DEFAULT_BUCKET:
+-- 
+2.52.0
+

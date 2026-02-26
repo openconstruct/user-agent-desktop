@@ -1,0 +1,28 @@
+From ec2a92c10b42345e69e46a524a875a0082f4d1e0 Mon Sep 17 00:00:00 2001
+From: Umbra Dev <dev@umbra.local>
+Date: Sun, 22 Feb 2026 20:30:00 -0500
+Subject: [PATCH] Hide wordmark on new tab page
+
+---
+ browser/extensions/newtab/css/activity-stream.css | 6 ++++++
+ 1 file changed, 6 insertions(+)
+
+diff --git a/browser/extensions/newtab/css/activity-stream.css b/browser/extensions/newtab/css/activity-stream.css
+index 08021dbee2..2a629bd601 100644
+--- a/browser/extensions/newtab/css/activity-stream.css
++++ b/browser/extensions/newtab/css/activity-stream.css
+@@ -741,6 +741,12 @@ main section {
+   margin-inline-start: 16px;
+   width: 105px;
+ }
++
++/* Hide the Firefox wordmark on new tab page */
++.logo-and-wordmark .wordmark {
++  display: none !important;
++}
++
+ .lightWallpaper .logo-and-wordmark .wordmark {
+   color-scheme: light;
+ }
+-- 
+2.53.0

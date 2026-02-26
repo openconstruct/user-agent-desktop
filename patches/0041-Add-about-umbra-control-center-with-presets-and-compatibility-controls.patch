@@ -1,0 +1,866 @@
+From: Jenkins <jenkins@magrathea>
+Date: Tue, 24 Feb 2026 02:55:18 -0500
+Subject: Add about:umbra control center with presets and compatibility tools
+
+
+diff --git a/browser/base/content/aboutUmbra.css b/browser/base/content/aboutUmbra.css
+new file mode 100644
+index 0000000000..91fb61b27e
+--- /dev/null
++++ b/browser/base/content/aboutUmbra.css
+@@ -0,0 +1,152 @@
++/* This Source Code Form is subject to the terms of the Mozilla Public
++ * License, v. 2.0. If a copy of the MPL was not distributed with this
++ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
++
++:root {
++  color-scheme: dark;
++  --umbra-bg: #0a0a0a;
++  --umbra-bg-card: #151515;
++  --umbra-border: #2f2f2f;
++  --umbra-text: #f2f2f2;
++  --umbra-subtle: #b0b0b0;
++  --umbra-accent: #4da36a;
++  --umbra-accent-hover: #5cb978;
++}
++
++* {
++  box-sizing: border-box;
++}
++
++html,
++body {
++  margin: 0;
++  padding: 0;
++  background: radial-gradient(circle at top right, #1e1e1e, var(--umbra-bg));
++  color: var(--umbra-text);
++  font: 14px/1.5 sans-serif;
++}
++
++#container {
++  max-width: 980px;
++  margin: 0 auto;
++  padding: 24px 16px 48px;
++}
++
++h1,
++h2,
++h3 {
++  margin: 0;
++}
++
++header {
++  margin-bottom: 16px;
++}
++
++header p {
++  margin: 6px 0 0;
++  color: var(--umbra-subtle);
++}
++
++.card {
++  border: 1px solid var(--umbra-border);
++  border-radius: 10px;
++  padding: 14px;
++  margin-bottom: 14px;
++  background: var(--umbra-bg-card);
++}
++
++.card > p {
++  margin: 8px 0 0;
++  color: var(--umbra-subtle);
++}
++
++.group {
++  margin-top: 12px;
++  padding-top: 12px;
++  border-top: 1px solid var(--umbra-border);
++}
++
++.group h3 {
++  font-size: 14px;
++}
++
++.button-row {
++  display: flex;
++  flex-wrap: wrap;
++  gap: 8px;
++  margin-top: 8px;
++}
++
++button {
++  border: 1px solid #3f3f3f;
++  background: #242424;
++  color: var(--umbra-text);
++  border-radius: 7px;
++  padding: 7px 12px;
++  cursor: pointer;
++}
++
++input[type="text"] {
++  border: 1px solid #3f3f3f;
++  background: #202020;
++  color: var(--umbra-text);
++  border-radius: 7px;
++  padding: 7px 10px;
++  min-width: 280px;
++}
++
++button:hover {
++  background: #303030;
++}
++
++button.active {
++  background: var(--umbra-accent);
++  border-color: var(--umbra-accent-hover);
++  color: #fff;
++}
++
++.subtle {
++  color: var(--umbra-subtle);
++  margin: 8px 0 0;
++}
++
++.status-row {
++  display: flex;
++  justify-content: space-between;
++  gap: 8px;
++  margin-top: 10px;
++}
++
++.status-label {
++  color: var(--umbra-subtle);
++}
++
++.status-value {
++  font-weight: 700;
++}
++
++table {
++  width: 100%;
++  border-collapse: collapse;
++  margin-top: 10px;
++}
++
++th,
++td {
++  border-bottom: 1px solid var(--umbra-border);
++  text-align: left;
++  padding: 8px 4px;
++}
++
++th {
++  color: var(--umbra-subtle);
++  font-size: 12px;
++  text-transform: uppercase;
++  letter-spacing: 0.04em;
++}
++
++#statusMessage {
++  margin-top: 10px;
++  color: var(--umbra-accent-hover);
++  min-height: 1.2em;
++}
+diff --git a/browser/base/content/aboutUmbra.js b/browser/base/content/aboutUmbra.js
+new file mode 100644
+index 0000000000..bdd04306eb
+--- /dev/null
++++ b/browser/base/content/aboutUmbra.js
+@@ -0,0 +1,525 @@
++/* This Source Code Form is subject to the terms of the Mozilla Public
++ * License, v. 2.0. If a copy of the MPL was not distributed with this
++ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
++
++"use strict";
++
++const PERM_EXPIRE_NEVER = Ci.nsIPermissionManager.EXPIRE_NEVER;
++const PERM_UNKNOWN = Ci.nsIPermissionManager.UNKNOWN_ACTION;
++const PERM_ALLOW = Ci.nsIPermissionManager.ALLOW_ACTION;
++const PERM_DENY = Ci.nsIPermissionManager.DENY_ACTION;
++
++const PREF_PRESET = "umbra.privacy.preset";
++
++const PRESETS = {
++  balanced: {
++    "browser.contentblocking.category": "standard",
++    "network.cookie.cookieBehavior": 5,
++    "network.cookie.cookieBehavior.pbmode": 5,
++    "dom.security.https_only_mode": false,
++    "privacy.fingerprintingProtection": false,
++    "privacy.fingerprintingProtection.pbmode": false,
++    "privacy.resistFingerprinting": false,
++    "privacy.resistFingerprinting.pbmode": false,
++    "network.trr.mode": 5,
++    "permissions.default.geo": 0,
++    "permissions.default.camera": 0,
++    "permissions.default.microphone": 0,
++    "permissions.default.desktop-notification": 0,
++  },
++  strict: {
++    "browser.contentblocking.category": "strict",
++    "network.cookie.cookieBehavior": 5,
++    "network.cookie.cookieBehavior.pbmode": 5,
++    "dom.security.https_only_mode": true,
++    "privacy.fingerprintingProtection": true,
++    "privacy.fingerprintingProtection.pbmode": true,
++    "privacy.resistFingerprinting": false,
++    "privacy.resistFingerprinting.pbmode": false,
++    "network.trr.mode": 5,
++    "permissions.default.geo": 0,
++    "permissions.default.camera": 0,
++    "permissions.default.microphone": 0,
++    "permissions.default.desktop-notification": 2,
++  },
++  max: {
++    "browser.contentblocking.category": "strict",
++    "network.cookie.cookieBehavior": 1,
++    "network.cookie.cookieBehavior.pbmode": 1,
++    "dom.security.https_only_mode": true,
++    "privacy.fingerprintingProtection": true,
++    "privacy.fingerprintingProtection.pbmode": true,
++    "privacy.resistFingerprinting": true,
++    "privacy.resistFingerprinting.pbmode": true,
++    "privacy.firstparty.isolate": true,
++    "network.trr.mode": 3,
++    "permissions.default.geo": 2,
++    "permissions.default.camera": 2,
++    "permissions.default.microphone": 2,
++    "permissions.default.desktop-notification": 2,
++  },
++};
++
++const DASHBOARD_PREFS = [
++  ["toolkit.telemetry.enabled", "Telemetry"],
++  ["app.normandy.enabled", "Normandy/Experiments"],
++  ["datareporting.policy.dataSubmissionEnabled", "Data Reporting Upload"],
++  ["services.settings.server", "Remote Settings Server"],
++  ["browser.safebrowsing.malware.enabled", "Safe Browsing Malware"],
++  ["browser.safebrowsing.phishing.enabled", "Safe Browsing Phishing"],
++  ["network.trr.mode", "DNS-over-HTTPS Mode"],
++  ["network.trr.excluded-domains", "DoH Excluded Domains"],
++  ["media.eme.enabled", "DRM/EME Enabled"],
++  ["media.gmp-manager.updateEnabled", "GMP Auto-download"],
++  ["network.connectivity-service.enabled", "Connectivity Checks"],
++  ["network.captive-portal-service.enabled", "Captive Portal Checks"],
++];
++
++let gSiteOverrideHost = "";
++
++function setStatus(message, isError = false) {
++  const statusEl = document.getElementById("statusMessage");
++  statusEl.textContent = message || "";
++  statusEl.style.color = isError ? "#d16060" : "#5cb978";
++}
++
++function prefType(prefName) {
++  return Services.prefs.getPrefType(prefName);
++}
++
++function getPrefValue(prefName) {
++  const type = prefType(prefName);
++  switch (type) {
++    case Ci.nsIPrefBranch.PREF_BOOL:
++      return Services.prefs.getBoolPref(prefName, false);
++    case Ci.nsIPrefBranch.PREF_INT:
++      return Services.prefs.getIntPref(prefName, 0);
++    case Ci.nsIPrefBranch.PREF_STRING:
++      return Services.prefs.getStringPref(prefName, "");
++    default:
++      return "(unset)";
++  }
++}
++
++function setPrefValue(prefName, value) {
++  if (Services.prefs.prefIsLocked(prefName)) {
++    return false;
++  }
++  if (typeof value == "boolean") {
++    Services.prefs.setBoolPref(prefName, value);
++  } else if (typeof value == "number") {
++    Services.prefs.setIntPref(prefName, value);
++  } else {
++    Services.prefs.setStringPref(prefName, String(value));
++  }
++  return true;
++}
++
++function formatDoHMode(mode) {
++  switch (mode) {
++    case 0:
++      return "off by default";
++    case 2:
++      return "enabled (fallback)";
++    case 3:
++      return "enabled (no fallback)";
++    case 5:
++      return "off (explicit)";
++    default:
++      return String(mode);
++  }
++}
++
++function formatPermission(action) {
++  if (action == PERM_ALLOW) {
++    return "allow";
++  }
++  if (action == PERM_DENY) {
++    return "block";
++  }
++  return "ask/default";
++}
++
++function normalizeHost(rawHost) {
++  const cleaned = String(rawHost || "").trim();
++  if (!cleaned) {
++    return "";
++  }
++  try {
++    const withScheme = cleaned.includes("://") ? cleaned : `https://${cleaned}`;
++    return new URL(withScheme).hostname.toLowerCase();
++  } catch (_) {
++    return "";
++  }
++}
++
++function getMostRecentBrowserWindow() {
++  return Services.wm.getMostRecentWindow("navigator:browser");
++}
++
++function createSiteContextFromHost(host) {
++  const uri = Services.io.newURI(`https://${host}`);
++  const principal = Services.scriptSecurityManager.createContentPrincipal(uri, {});
++  return {
++    host,
++    uri,
++    principal,
++    source: "host override",
++  };
++}
++
++function getCurrentSiteContext() {
++  if (gSiteOverrideHost) {
++    return createSiteContextFromHost(gSiteOverrideHost);
++  }
++
++  const win = getMostRecentBrowserWindow();
++  if (!win?.gBrowser) {
++    return null;
++  }
++
++  const candidates = [win.gBrowser.selectedBrowser, ...win.gBrowser.browsers];
++  for (const browser of candidates) {
++    const uri = browser?.currentURI;
++    if (!uri || !uri.schemeIs || (!uri.schemeIs("http") && !uri.schemeIs("https"))) {
++      continue;
++    }
++
++    let host = "";
++    try {
++      host = uri.asciiHost;
++    } catch (_) {
++      continue;
++    }
++    if (!host) {
++      continue;
++    }
++
++    let principal = browser.contentPrincipal;
++    if (!principal || !principal.isContentPrincipal) {
++      principal = Services.scriptSecurityManager.createContentPrincipal(uri, {});
++    }
++
++    return {
++      host,
++      uri,
++      principal,
++      source: "active browser tab",
++    };
++  }
++
++  return null;
++}
++
++function getExcludedDomains() {
++  const raw = Services.prefs.getStringPref("network.trr.excluded-domains", "");
++  return new Set(
++    raw
++      .split(",")
++      .map(item => item.trim())
++      .filter(Boolean)
++  );
++}
++
++function setExcludedDomains(domainSet) {
++  if (Services.prefs.prefIsLocked("network.trr.excluded-domains")) {
++    return false;
++  }
++  const value = [...domainSet].sort().join(",");
++  Services.prefs.setStringPref("network.trr.excluded-domains", value);
++  return true;
++}
++
++function testPermission(principal, type) {
++  return Services.perms.testPermissionFromPrincipal(principal, type);
++}
++
++function updatePresetButtons() {
++  const currentPreset = Services.prefs.getStringPref(PREF_PRESET, "strict");
++  const currentPresetLabel = currentPreset in PRESETS ? currentPreset : "custom";
++
++  for (const [preset] of Object.entries(PRESETS)) {
++    const button = document.querySelector(`button[data-preset="${preset}"]`);
++    button.classList.toggle("active", preset == currentPresetLabel);
++  }
++
++  const presetText =
++    currentPresetLabel == "custom"
++      ? "Active preset: custom"
++      : `Active preset: ${currentPresetLabel}`;
++  document.getElementById("activePreset").textContent = presetText;
++}
++
++function updateUpdatePolicyStatus() {
++  let statusText = "Unknown";
++  const policies = Services.policies?.getActivePolicies?.() || {};
++  if (policies.DisableAppUpdate === true) {
++    statusText = "Yes";
++  } else {
++    statusText = "No";
++  }
++  document.getElementById("updatePolicyStatus").textContent = statusText;
++}
++
++function updateCurrentSiteStatus() {
++  const currentSiteEl = document.getElementById("currentSite");
++  const etpStateEl = document.getElementById("etpSiteState");
++  const geoStateEl = document.getElementById("geoState");
++  const dohStateEl = document.getElementById("dohState");
++  const drmStateEl = document.getElementById("drmState");
++
++  const context = getCurrentSiteContext();
++  const drmEnabled = Services.prefs.getBoolPref("media.eme.enabled", false);
++  const drmLocked = Services.prefs.prefIsLocked("media.eme.enabled");
++  drmStateEl.textContent = `DRM is ${drmEnabled ? "enabled" : "disabled"}${
++    drmLocked ? " (locked)" : ""
++  }`;
++
++  const dohMode = Services.prefs.getIntPref("network.trr.mode", 5);
++  if (!context) {
++    currentSiteEl.textContent = "Current site: (no http/https site available)";
++    etpStateEl.textContent = "ETP exception: unavailable";
++    geoStateEl.textContent = "Geolocation: unavailable";
++    dohStateEl.textContent = `DoH: ${formatDoHMode(dohMode)} | Site bypass: unavailable`;
++    return;
++  }
++
++  currentSiteEl.textContent = `Current site: ${context.host} (${context.source})`;
++
++  const trackingAction = testPermission(context.principal, "trackingprotection");
++  const hasEtpException = trackingAction == PERM_ALLOW;
++  etpStateEl.textContent = `ETP exception: ${hasEtpException ? "on" : "off"}`;
++
++  const geoAction = testPermission(context.principal, "geo");
++  geoStateEl.textContent = `Geolocation: ${formatPermission(geoAction)}`;
++
++  const bypassed = getExcludedDomains().has(context.host);
++  dohStateEl.textContent = `DoH: ${formatDoHMode(dohMode)} | Site bypass: ${
++    bypassed ? "on" : "off"
++  }`;
++}
++
++function updateDashboard() {
++  const rows = document.getElementById("statusRows");
++  rows.textContent = "";
++
++  for (const [prefName, label] of DASHBOARD_PREFS) {
++    const tr = document.createElement("tr");
++    const tdLabel = document.createElement("td");
++    const tdValue = document.createElement("td");
++    const tdLock = document.createElement("td");
++
++    tdLabel.textContent = label;
++    let value = getPrefValue(prefName);
++    if (prefName == "network.trr.mode" && typeof value == "number") {
++      value = `${value} (${formatDoHMode(value)})`;
++    }
++    tdValue.textContent = String(value);
++    tdLock.textContent = Services.prefs.prefIsLocked(prefName) ? "Yes" : "No";
++
++    tr.append(tdLabel, tdValue, tdLock);
++    rows.append(tr);
++  }
++}
++
++function refreshAll() {
++  updateUpdatePolicyStatus();
++  updatePresetButtons();
++  updateCurrentSiteStatus();
++  updateDashboard();
++}
++
++function applyPreset(presetName) {
++  if (!(presetName in PRESETS)) {
++    setStatus(`Unknown preset: ${presetName}`, true);
++    return;
++  }
++
++  let applied = 0;
++  let skipped = 0;
++  for (const [prefName, prefValue] of Object.entries(PRESETS[presetName])) {
++    if (setPrefValue(prefName, prefValue)) {
++      applied++;
++    } else {
++      skipped++;
++    }
++  }
++
++  setPrefValue(PREF_PRESET, presetName);
++  setStatus(`Preset '${presetName}' applied (${applied} set, ${skipped} locked).`);
++  refreshAll();
++}
++
++function toggleGlobalDrm() {
++  const prefName = "media.eme.enabled";
++  if (Services.prefs.prefIsLocked(prefName)) {
++    setStatus("DRM pref is locked by policy/config.", true);
++    return;
++  }
++
++  const nextValue = !Services.prefs.getBoolPref(prefName, false);
++  Services.prefs.setBoolPref(prefName, nextValue);
++  setStatus(`DRM ${nextValue ? "enabled" : "disabled"}.`);
++  refreshAll();
++}
++
++function toggleGlobalDoh() {
++  const prefName = "network.trr.mode";
++  if (Services.prefs.prefIsLocked(prefName)) {
++    setStatus("DoH mode pref is locked by policy/config.", true);
++    return;
++  }
++
++  const mode = Services.prefs.getIntPref(prefName, 5);
++  const nextMode = mode == 2 || mode == 3 ? 5 : 2;
++  Services.prefs.setIntPref(prefName, nextMode);
++  setStatus(`DoH mode set to ${nextMode} (${formatDoHMode(nextMode)}).`);
++  refreshAll();
++}
++
++function toggleEtpForCurrentSite() {
++  const context = getCurrentSiteContext();
++  if (!context) {
++    setStatus("No compatible site available for ETP exception.", true);
++    return;
++  }
++
++  const current = testPermission(context.principal, "trackingprotection");
++  if (current == PERM_ALLOW) {
++    Services.perms.removeFromPrincipal(context.principal, "trackingprotection");
++    setStatus(`Removed ETP exception for ${context.host}.`);
++  } else {
++    Services.perms.addFromPrincipal(
++      context.principal,
++      "trackingprotection",
++      PERM_ALLOW,
++      PERM_EXPIRE_NEVER
++    );
++    setStatus(`Added ETP exception for ${context.host}.`);
++  }
++  refreshAll();
++}
++
++function setGeolocationPermission(action) {
++  const context = getCurrentSiteContext();
++  if (!context) {
++    setStatus("No compatible site available for geolocation permission.", true);
++    return;
++  }
++
++  if (action == "reset") {
++    Services.perms.removeFromPrincipal(context.principal, "geo");
++    setStatus(`Reset geolocation permission for ${context.host}.`);
++  } else {
++    const permission = action == "allow" ? PERM_ALLOW : PERM_DENY;
++    Services.perms.addFromPrincipal(
++      context.principal,
++      "geo",
++      permission,
++      PERM_EXPIRE_NEVER
++    );
++    setStatus(
++      `${permission == PERM_ALLOW ? "Allowed" : "Blocked"} geolocation for ${
++        context.host
++      }.`
++    );
++  }
++  refreshAll();
++}
++
++function addCurrentSiteDohBypass() {
++  const context = getCurrentSiteContext();
++  if (!context) {
++    setStatus("No compatible site available for DoH bypass.", true);
++    return;
++  }
++
++  const excluded = getExcludedDomains();
++  excluded.add(context.host);
++  if (!setExcludedDomains(excluded)) {
++    setStatus("DoH exclusion list is locked by policy/config.", true);
++    return;
++  }
++
++  setStatus(`Added DoH bypass for ${context.host}.`);
++  refreshAll();
++}
++
++function removeCurrentSiteDohBypass() {
++  const context = getCurrentSiteContext();
++  if (!context) {
++    setStatus("No compatible site available for DoH bypass removal.", true);
++    return;
++  }
++
++  const excluded = getExcludedDomains();
++  excluded.delete(context.host);
++  if (!setExcludedDomains(excluded)) {
++    setStatus("DoH exclusion list is locked by policy/config.", true);
++    return;
++  }
++
++  setStatus(`Removed DoH bypass for ${context.host}.`);
++  refreshAll();
++}
++
++function useHostOverride() {
++  const input = document.getElementById("siteOverrideInput");
++  const host = normalizeHost(input.value);
++  if (!host) {
++    setStatus("Invalid host override.", true);
++    return;
++  }
++
++  gSiteOverrideHost = host;
++  setStatus(`Using host override: ${host}`);
++  refreshAll();
++}
++
++function clearHostOverride() {
++  gSiteOverrideHost = "";
++  document.getElementById("siteOverrideInput").value = "";
++  setStatus("Using active tab for site compatibility controls.");
++  refreshAll();
++}
++
++function init() {
++  for (const button of document.querySelectorAll("button[data-preset]")) {
++    button.addEventListener("click", () => applyPreset(button.dataset.preset));
++  }
++
++  document
++    .getElementById("toggleDrmGlobal")
++    .addEventListener("click", toggleGlobalDrm);
++  document
++    .getElementById("toggleDohGlobal")
++    .addEventListener("click", toggleGlobalDoh);
++  document
++    .getElementById("toggleEtpSite")
++    .addEventListener("click", toggleEtpForCurrentSite);
++  document
++    .getElementById("geoAllow")
++    .addEventListener("click", () => setGeolocationPermission("allow"));
++  document
++    .getElementById("geoBlock")
++    .addEventListener("click", () => setGeolocationPermission("block"));
++  document
++    .getElementById("geoReset")
++    .addEventListener("click", () => setGeolocationPermission("reset"));
++  document
++    .getElementById("dohBypassAdd")
++    .addEventListener("click", addCurrentSiteDohBypass);
++  document
++    .getElementById("dohBypassRemove")
++    .addEventListener("click", removeCurrentSiteDohBypass);
++  document
++    .getElementById("useOverrideSite")
++    .addEventListener("click", useHostOverride);
++  document
++    .getElementById("clearOverrideSite")
++    .addEventListener("click", clearHostOverride);
++
++  refreshAll();
++}
++
++init();
+diff --git a/browser/base/content/aboutUmbra.xhtml b/browser/base/content/aboutUmbra.xhtml
+new file mode 100644
+index 0000000000..a64043a6cf
+--- /dev/null
++++ b/browser/base/content/aboutUmbra.xhtml
+@@ -0,0 +1,127 @@
++<?xml version="1.0" encoding="UTF-8" ?>
++<!-- This Source Code Form is subject to the terms of the Mozilla Public
++   - License, v. 2.0. If a copy of the MPL was not distributed with this
++   - file, You can obtain one at http://mozilla.org/MPL/2.0/. -->
++<!DOCTYPE html>
++
++<html xmlns="http://www.w3.org/1999/xhtml">
++  <head>
++    <meta
++      http-equiv="Content-Security-Policy"
++      content="default-src chrome: resource:; object-src 'none'"
++    />
++    <meta name="color-scheme" content="dark light" />
++    <title>Umbra Control Center</title>
++    <link
++      rel="stylesheet"
++      type="text/css"
++      media="all"
++      href="chrome://browser/content/aboutUmbra.css"
++    />
++  </head>
++  <body>
++    <main id="container">
++      <header>
++        <h1>Umbra Control Center</h1>
++        <p>
++          Privacy presets, site compatibility controls, and live hardening
++          status.
++        </p>
++      </header>
++
++      <section class="card">
++        <h2>Update Pipeline</h2>
++        <p>
++          Umbra keeps application update checks disabled by default in this
++          build.
++        </p>
++        <div class="status-row">
++          <span class="status-label">App updates disabled by policy</span>
++          <span id="updatePolicyStatus" class="status-value">Unknown</span>
++        </div>
++      </section>
++
++      <section class="card">
++        <h2>Privacy Presets</h2>
++        <p>Select a default profile. Locked enterprise prefs stay unchanged.</p>
++        <div class="button-row">
++          <button id="presetBalanced" data-preset="balanced">Balanced</button>
++          <button id="presetStrict" data-preset="strict">Strict</button>
++          <button id="presetMax" data-preset="max">Max</button>
++        </div>
++        <p id="activePreset" class="subtle"></p>
++      </section>
++
++      <section class="card">
++        <h2>Current Site Compatibility</h2>
++        <p id="currentSite" class="subtle">Current site: (none)</p>
++        <div class="button-row">
++          <input
++            id="siteOverrideInput"
++            type="text"
++            placeholder="Optional host override (example.com)"
++          />
++          <button id="useOverrideSite">Use Host</button>
++          <button id="clearOverrideSite">Use Active Tab</button>
++        </div>
++
++        <div class="group">
++          <h3>Tracking and Cookies</h3>
++          <div class="button-row">
++            <button id="toggleEtpSite">Toggle ETP Exception For Site</button>
++          </div>
++          <p id="etpSiteState" class="subtle"></p>
++        </div>
++
++        <div class="group">
++          <h3>Geolocation (Current Site)</h3>
++          <div class="button-row">
++            <button id="geoAllow">Allow</button>
++            <button id="geoBlock">Block</button>
++            <button id="geoReset">Reset</button>
++          </div>
++          <p id="geoState" class="subtle"></p>
++        </div>
++
++        <div class="group">
++          <h3>DNS-over-HTTPS</h3>
++          <div class="button-row">
++            <button id="toggleDohGlobal">Toggle Global DoH</button>
++            <button id="dohBypassAdd">Bypass DoH For Site</button>
++            <button id="dohBypassRemove">Remove Site Bypass</button>
++          </div>
++          <p id="dohState" class="subtle"></p>
++        </div>
++
++        <div class="group">
++          <h3>DRM (Global)</h3>
++          <div class="button-row">
++            <button id="toggleDrmGlobal">Toggle DRM</button>
++          </div>
++          <p class="subtle">
++            Firefox EME/DRM is global. This toggle applies to all sites.
++          </p>
++          <p id="drmState" class="subtle"></p>
++        </div>
++      </section>
++
++      <section class="card">
++        <h2>Transparency Dashboard</h2>
++        <table>
++          <thead>
++            <tr>
++              <th>Setting</th>
++              <th>Value</th>
++              <th>Locked</th>
++            </tr>
++          </thead>
++          <tbody id="statusRows"></tbody>
++        </table>
++      </section>
++
++      <p id="statusMessage" role="status" aria-live="polite"></p>
++    </main>
++
++    <script src="chrome://browser/content/aboutUmbra.js" />
++  </body>
++</html>
+diff --git a/browser/base/jar.mn b/browser/base/jar.mn
+index ad10fe2c55..e959c1e4f3 100644
+--- a/browser/base/jar.mn
++++ b/browser/base/jar.mn
+@@ -13,6 +13,9 @@ browser.jar:
+         content/browser/aboutRobots.xhtml             (content/aboutRobots.xhtml)
+         content/browser/aboutRobots.js                (content/aboutRobots.js)
+         content/browser/aboutRobots.css               (content/aboutRobots.css)
++        content/browser/aboutUmbra.xhtml              (content/aboutUmbra.xhtml)
++        content/browser/aboutUmbra.js                 (content/aboutUmbra.js)
++        content/browser/aboutUmbra.css                (content/aboutUmbra.css)
+         content/browser/logos/etp-mobile.svg          (content/logos/etp-mobile.svg)
+         content/browser/logos/fxa-logo.svg            (content/logos/fxa-logo.svg)
+         content/browser/logos/lockwise.svg            (content/logos/lockwise.svg)
+diff --git a/browser/components/about/AboutRedirector.cpp b/browser/components/about/AboutRedirector.cpp
+index 6b97713647..cd286e9049 100644
+--- a/browser/components/about/AboutRedirector.cpp
++++ b/browser/components/about/AboutRedirector.cpp
+@@ -99,6 +99,8 @@ static const RedirEntry kRedirMap[] = {
+     {"tabcrashed", "chrome://browser/content/aboutTabCrashed.xhtml",
+      nsIAboutModule::URI_SAFE_FOR_UNTRUSTED_CONTENT |
+          nsIAboutModule::ALLOW_SCRIPT | nsIAboutModule::HIDE_FROM_ABOUTABOUT},
++    {"umbra", "chrome://browser/content/aboutUmbra.xhtml",
++     nsIAboutModule::ALLOW_SCRIPT | nsIAboutModule::IS_SECURE_CHROME_UI},
+     {"welcomeback", "chrome://browser/content/aboutWelcomeBack.xhtml",
+      nsIAboutModule::ALLOW_SCRIPT | nsIAboutModule::HIDE_FROM_ABOUTABOUT |
+          nsIAboutModule::IS_SECURE_CHROME_UI},
+diff --git a/browser/components/about/components.conf b/browser/components/about/components.conf
+index e0a87d43ef..de72593f7f 100644
+--- a/browser/components/about/components.conf
++++ b/browser/components/about/components.conf
+@@ -30,6 +30,7 @@ pages = [
+     'sessionrestore',
+     'settings',
+     'tabcrashed',
++    'umbra',
+     'unloads',
+     'welcome',
+     'welcomeback',

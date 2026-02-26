@@ -1,0 +1,27 @@
+From: Umbra Dev <dev@umbra.local>
+Date: Sun, 22 Feb 2026 21:00:00 -0500
+Subject: [PATCH] Add default gradient background for new tab page
+
+---
+ browser/extensions/newtab/css/activity-stream.css | 6 ++++++
+ 1 file changed, 6 insertions(+)
+
+diff --git a/browser/extensions/newtab/css/activity-stream.css b/browser/extensions/newtab/css/activity-stream.css
+index 2a629bd601..0a37386906 100644
+--- a/browser/extensions/newtab/css/activity-stream.css
++++ b/browser/extensions/newtab/css/activity-stream.css
+@@ -344,6 +344,12 @@ body {
+   background-image: var(--newtab-wallpaper, ""), linear-gradient(to right, var(--newtab-wallpaper-color, ""), var(--newtab-wallpaper-color, ""));
+ }
+ 
++/* Umbra default gradient background */
++body.activity-stream {
++  --newtab-wallpaper: linear-gradient(135deg, #000000 0%, #2d2d2d 50%, #4a4a4a 100%);
++  --newtab-wallpaper-color: transparent;
++}
++
+ .no-scroll {
+   overflow: hidden;
+ }
+-- 
+2.53.0

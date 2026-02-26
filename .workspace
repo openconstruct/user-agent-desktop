@@ -1,0 +1,15 @@
+{
+  "addons": {
+    "ublock-origin": "https://addons.mozilla.org/firefox/downloads/latest/ublock-origin/latest.xpi"
+  },
+  "firefoxAddons": [
+    "newtab",
+    "webcompat",
+    "pictureinpicture"
+  ],
+  "firefox": "140.8.0esr",
+  "firefoxSourceUrl": "https://download-installer.cdn.mozilla.net/pub/firefox/releases/140.8.0esr/source/firefox-140.8.0esr.source.tar.xz",
+  "app": "1.0.0",
+  "s3bucket": "",
+  "locales": {}
+}

@@ -1,0 +1,24 @@
+From: Sam Macbeth <sam@cliqz.com>
+Date: Tue, 22 Sep 2020 17:54:48 +0200
+Subject: Update uninstaller survey URL
+
+---
+ browser/installer/windows/nsis/uninstaller.nsi | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/browser/installer/windows/nsis/uninstaller.nsi b/browser/installer/windows/nsis/uninstaller.nsi
+index 559c8b46ee..5ebecce030 100755
+--- a/browser/installer/windows/nsis/uninstaller.nsi
++++ b/browser/installer/windows/nsis/uninstaller.nsi
+@@ -154,7 +154,7 @@ OutFile "helper.exe"
+ !endif
+ ShowUnInstDetails nevershow
+ 
+-!define URLUninstallSurvey "https://qsurvey.mozilla.com/s3/FF-Desktop-Post-Uninstall?channel=${UpdateChannel}&version=${AppVersion}&osversion="
++!define URLUninstallSurvey "https://get.umbrabrowser.com/support/uninstall-survey"
+ 
+ ; Support for the profile refresh feature
+ !define URLProfileRefreshHelp "https://support.mozilla.org/kb/refresh-firefox-reset-add-ons-and-settings"
+-- 
+2.52.0
+

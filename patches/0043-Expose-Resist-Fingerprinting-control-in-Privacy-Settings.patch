@@ -1,0 +1,184 @@
+From: Umbra Dev <dev@umbra.local>
+Date: Tue, 24 Feb 2026 17:10:00 -0500
+Subject: Expose Resist Fingerprinting control in Privacy Settings
+
+diff --git a/browser/components/preferences/privacy.inc.xhtml b/browser/components/preferences/privacy.inc.xhtml
+index 28e325c938..71450fa027 100644
+--- a/browser/components/preferences/privacy.inc.xhtml
++++ b/browser/components/preferences/privacy.inc.xhtml
+@@ -325,6 +325,20 @@
+                       </menulist>
+                     </vbox>
+                   </hbox>
++                <hbox class="custom-option">
++                    <checkbox id="contentBlockingResistFingerprintingCheckbox"
++                              class="content-blocking-checkbox" flex="1"
++                              data-l10n-id="content-blocking-resist-fingerprinting-label"
++                              aria-describedby="contentBlockingCustomDesc"/>
++                    <vbox>
++                      <menulist id="resistFingerprintingMenu">
++                        <menupopup>
++                          <menuitem data-l10n-id="content-blocking-option-private" value="private"/>
++                          <menuitem data-l10n-id="content-blocking-tracking-protection-option-all-windows" value="always"/>
++                        </menupopup>
++                      </menulist>
++                    </vbox>
++                  </hbox>
+               <html:div class="content-blocking-warning info-box-container reload-tabs" hidden="true">
+                 <html:div class="content-blocking-reload-desc-container">
+                   <html:div class="info-icon-container">
+diff --git a/browser/components/preferences/privacy.js b/browser/components/preferences/privacy.js
+index 5722057a06..04c923da0b 100644
+--- a/browser/components/preferences/privacy.js
++++ b/browser/components/preferences/privacy.js
+@@ -23,6 +23,8 @@ const CONTENT_BLOCKING_PREFS = [
+   "privacy.trackingprotection.emailtracking.pbmode.enabled",
+   "privacy.fingerprintingProtection",
+   "privacy.fingerprintingProtection.pbmode",
++  "privacy.resistFingerprinting",
++  "privacy.resistFingerprinting.pbmode",
+ ];
+ 
+ const PREF_OPT_OUT_STUDIES_ENABLED = "app.shield.optoutstudies.enabled";
+@@ -940,6 +942,7 @@ var gPrivacyPane = {
+     this._showCustomBlockList();
+     this.trackingProtectionReadPrefs();
+     this.fingerprintingProtectionReadPrefs();
++    this.resistFingerprintingReadPrefs();
+     this.networkCookieBehaviorReadPrefs();
+     this._initTrackingProtectionExtensionControl();
+     this._initThirdPartyCertsToggle();
+@@ -976,6 +979,14 @@ var gPrivacyPane = {
+       "change",
+       gPrivacyPane.fingerprintingProtectionReadPrefs.bind(gPrivacyPane)
+     );
++    Preferences.get("privacy.resistFingerprinting").on(
++      "change",
++      gPrivacyPane.resistFingerprintingReadPrefs.bind(gPrivacyPane)
++    );
++    Preferences.get("privacy.resistFingerprinting.pbmode").on(
++      "change",
++      gPrivacyPane.resistFingerprintingReadPrefs.bind(gPrivacyPane)
++    );
+ 
+     setEventListener(
+       "trackingProtectionExceptions",
+@@ -1304,6 +1315,16 @@ var gPrivacyPane = {
+       Glean.privacyUiFppClick.menu.record(extra);
+       this.fingerprintingProtectionWritePrefs();
+     });
++    setEventListener(
++      "contentBlockingResistFingerprintingCheckbox",
++      "command",
++      this.resistFingerprintingWritePrefs
++    );
++    setEventListener(
++      "resistFingerprintingMenu",
++      "command",
++      this.resistFingerprintingWritePrefs
++    );
+     setEventListener("standardArrow", "command", this.toggleExpansion);
+     setEventListener("strictArrow", "command", this.toggleExpansion);
+     setEventListener("customArrow", "command", this.toggleExpansion);
+@@ -1721,6 +1742,32 @@ var gPrivacyPane = {
+     fppCheckbox.disabled = enabledPref.locked;
+   },
+ 
++  /**
++   * Selects the right item of the Resist Fingerprinting menulist and checkbox.
++   */
++  resistFingerprintingReadPrefs() {
++    let enabledPref = Preferences.get("privacy.resistFingerprinting");
++    let pbmPref = Preferences.get("privacy.resistFingerprinting.pbmode");
++    let rfpMenu = document.getElementById("resistFingerprintingMenu");
++    let rfpCheckbox = document.getElementById(
++      "contentBlockingResistFingerprintingCheckbox"
++    );
++
++    // Global enable takes precedence over enabled in Private Browsing.
++    if (enabledPref.value) {
++      rfpMenu.value = "always";
++      rfpCheckbox.checked = true;
++    } else if (pbmPref.value) {
++      rfpMenu.value = "private";
++      rfpCheckbox.checked = true;
++    } else {
++      rfpMenu.value = "never";
++      rfpCheckbox.checked = false;
++    }
++    rfpMenu.disabled = !rfpCheckbox.checked || enabledPref.locked;
++    rfpCheckbox.disabled = enabledPref.locked;
++  },
++
+   /**
+    * Selects the right items of the new Cookies & Site Data UI.
+    */
+@@ -1870,6 +1917,43 @@ var gPrivacyPane = {
+     }
+   },
+ 
++  resistFingerprintingWritePrefs() {
++    let enabledPref = Preferences.get("privacy.resistFingerprinting");
++    let pbmPref = Preferences.get("privacy.resistFingerprinting.pbmode");
++    let rfpMenu = document.getElementById("resistFingerprintingMenu");
++    let rfpCheckbox = document.getElementById(
++      "contentBlockingResistFingerprintingCheckbox"
++    );
++
++    let value;
++    if (rfpCheckbox.checked) {
++      if (rfpMenu.value == "never") {
++        rfpMenu.value = "private";
++      }
++      value = rfpMenu.value;
++    } else {
++      rfpMenu.value = "never";
++      value = "never";
++    }
++
++    rfpMenu.disabled = !rfpCheckbox.checked;
++
++    switch (value) {
++      case "always":
++        enabledPref.value = true;
++        pbmPref.value = true;
++        break;
++      case "private":
++        enabledPref.value = false;
++        pbmPref.value = true;
++        break;
++      case "never":
++        enabledPref.value = false;
++        pbmPref.value = false;
++        break;
++    }
++  },
++
+   toggleExpansion(e) {
+     let carat = e.target;
+     carat.classList.toggle("up");
+diff --git a/browser/locales/en-US/browser/preferences/preferences.ftl b/browser/locales/en-US/browser/preferences/preferences.ftl
+index e2b12f9fb3..dd2310a283 100644
+--- a/browser/locales/en-US/browser/preferences/preferences.ftl
++++ b/browser/locales/en-US/browser/preferences/preferences.ftl
+@@ -1301,8 +1301,7 @@ content-blocking-learn-more = Learn more
+ content-blocking-fpi-incompatibility-warning = You are using First Party Isolation (FPI), which overrides some of { -brand-short-name }’s cookie settings.
+ 
+ # There is no need to translate "Resist Fingerprinting (RFP)". This is a
+-# feature that can only be enabled via about:config, and it's not exposed to
+-# standard users (e.g. via Settings).
++# technical feature name.
+ content-blocking-rfp-incompatibility-warning = You’re using Resist Fingerprinting (RFP), which replaces some of { -brand-short-name }’s fingerprinting protection settings. This might cause some sites to break.
+ 
+ ## These strings are used to define the different levels of
+@@ -1397,6 +1396,10 @@ content-blocking-suspected-fingerprinters-label =
+   .label = Suspected fingerprinters
+   .accesskey = S
+ 
++content-blocking-resist-fingerprinting-label =
++  .label = Resist Fingerprinting (RFP)
++  .accesskey = R
++
+ ## Privacy Section - Tracking
+ 
+ tracking-manage-exceptions =

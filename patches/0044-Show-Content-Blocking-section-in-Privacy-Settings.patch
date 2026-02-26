@@ -1,0 +1,23 @@
+From: Umbra Dev <dev@umbra.local>
+Date: Tue, 24 Feb 2026 18:30:00 -0500
+Subject: Show Content Blocking section in Privacy Settings
+
+---
+ browser/components/preferences/privacy.inc.xhtml | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/browser/components/preferences/privacy.inc.xhtml b/browser/components/preferences/privacy.inc.xhtml
+index 71450fa027..c2643a97b6 100644
+--- a/browser/components/preferences/privacy.inc.xhtml
++++ b/browser/components/preferences/privacy.inc.xhtml
+@@ -15,7 +15,7 @@
+ </hbox>
+ 
+ <!-- Tracking / Content Blocking -->
+-<groupbox id="trackingGroup" data-category="panePrivacy" hidden="true" aria-describedby="contentBlockingDescription" class="highlighting-group">
++<groupbox id="trackingGroup" data-category="panePrivacy" aria-describedby="contentBlockingDescription" class="highlighting-group">
+   <label id="contentBlockingHeader"><html:h2 data-l10n-id="content-blocking-enhanced-tracking-protection"/></label>
+   <vbox data-subcategory="trackingprotection">
+     <hbox align="start">
+-- 
+2.52.0

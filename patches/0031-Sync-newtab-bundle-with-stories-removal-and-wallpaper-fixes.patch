@@ -1,0 +1,93 @@
+From 87bfc88f5f5f6eeceb7b68dce49ebc7fcc1ef820 Mon Sep 17 00:00:00 2001
+From: Jenkins <jenkins@magrathea>
+Date: Sat, 21 Feb 2026 22:05:40 -0500
+Subject: [PATCH] Sync newtab bundle with stories removal and wallpaper fixes
+
+---
+ .../data/content/activity-stream.bundle.js    | 28 +++++++++----------
+ 1 file changed, 14 insertions(+), 14 deletions(-)
+
+diff --git a/browser/extensions/newtab/data/content/activity-stream.bundle.js b/browser/extensions/newtab/data/content/activity-stream.bundle.js
+index a6b65c66c7..36401f6510 100644
+--- a/browser/extensions/newtab/data/content/activity-stream.bundle.js
++++ b/browser/extensions/newtab/data/content/activity-stream.bundle.js
+@@ -12575,8 +12575,7 @@ class _WallpaperCategories extends (external_React_default()).PureComponent {
+       activeWallpaper
+     } = this.props;
+     const {
+-      activeCategory,
+-      showColorPicker
++      activeCategory
+     } = this.state;
+     const {
+       activeCategoryFluentID
+@@ -12594,21 +12593,16 @@ class _WallpaperCategories extends (external_React_default()).PureComponent {
+     const selectedWallpaper = prefs["newtabWallpapers.wallpaper"];
+ 
+     // User has previous selected a custom color
+-    if (selectedWallpaper.includes("solid-color-picker")) {
+-      this.setState({
+-        showColorPicker: true
+-      });
++    if (selectedWallpaper?.includes("solid-color-picker")) {
+       const regex = /#([a-fA-F0-9]{6})/;
+       [wallpaperCustomSolidColorHex] = selectedWallpaper.match(regex);
+     }
+ 
+     // Enable custom color select if pref'ed on
+-    this.setState({
+-      showColorPicker: prefs["newtabWallpapers.customColor.enabled"]
+-    });
++    const showColorPicker = prefs["newtabWallpapers.customColor.enabled"];
+ 
+     // Remove last item of solid colors to make space for custom color picker
+-    if (prefs["newtabWallpapers.customColor.enabled"] && activeCategory === "solid-colors") {
++    if (showColorPicker && activeCategory === "solid-colors") {
+       filteredWallpapers = reduceColorsToFitCustomColorInput(filteredWallpapers);
+     }
+ 
+@@ -12835,9 +12829,15 @@ class ContentSection extends (external_React_default()).PureComponent {
+   }
+   componentDidMount() {
+     this.setDrawerMargins();
++    if (this.props.enabledSections.pocketEnabled) {
++      this.props.setPref("feeds.section.topstories", false);
++    }
+   }
+-  componentDidUpdate() {
++  componentDidUpdate(prevProps) {
+     this.setDrawerMargins();
++    if (this.props.enabledSections.pocketEnabled && !prevProps.enabledSections.pocketEnabled) {
++      this.props.setPref("feeds.section.topstories", false);
++    }
+   }
+   setDrawerMargins() {
+     this.setDrawerMargin(`TOP_SITES`, this.props.enabledSections.topSitesEnabled);
+@@ -12948,7 +12948,7 @@ class ContentSection extends (external_React_default()).PureComponent {
+       value: "4",
+       "data-l10n-id": "newtab-custom-row-selector",
+       "data-l10n-args": "{\"num\": 4}"
+-    }))))))), pocketRegion && /*#__PURE__*/external_React_default().createElement("div", {
++    }))))))), false && /*#__PURE__*/external_React_default().createElement("div", {
+       id: "pocket-section",
+       className: "section"
+     }, /*#__PURE__*/external_React_default().createElement("moz-toggle", {
+@@ -14687,7 +14687,7 @@ class BaseContent extends (external_React_default()).PureComponent {
+       const regexRGB = /#([a-fA-F0-9]{6})/;
+ 
+       // Override Remote Settings to set custom HEX bg color
+-      if (selectedWallpaper.includes("solid-color-picker")) {
++      if (selectedWallpaper?.includes("solid-color-picker")) {
+         wallpaper = {
+           theme: wallpaper?.theme || "light",
+           title: "solid-color-picker",
+@@ -15263,4 +15263,4 @@ function renderCache(initialState) {
+ }
+ NewtabRenderUtils = __webpack_exports__;
+ /******/ })()
+-;
+\ No newline at end of file
++;
+-- 
+2.53.0
+

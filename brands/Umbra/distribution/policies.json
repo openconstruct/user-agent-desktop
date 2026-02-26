@@ -1,0 +1,126 @@
+{
+    "__COMMENT__": "Umbra Browser Enterprise Policies - https://github.com/mozilla/policy-templates",
+    "policies": {
+        "AppAutoUpdate": false,
+        "AutofillAddressEnabled": false,
+        "AutofillCreditCardEnabled": false,
+        "BackgroundAppUpdate": false,
+        "CaptivePortal": false,
+        "DisableAppUpdate": true,
+        "DisableFeedbackCommands": true,
+        "DisableFirefoxAccounts": true,
+        "DisableFirefoxStudies": true,
+        "DisablePocket": true,
+        "DisableTelemetry": true,
+        "DNSOverHTTPS": {
+            "Enabled": false,
+            "Fallback": true,
+            "Locked": false
+        },
+        "EnableTrackingProtection": {
+            "Category": "strict",
+            "Cryptomining": true,
+            "EmailTracking": true,
+            "Fingerprinting": true,
+            "Locked": false,
+            "SuspectedFingerprinting": true,
+            "Value": true
+        },
+        "EncryptedMediaExtensions": {
+            "Enabled": false,
+            "Locked": false
+        },
+        "HttpsOnlyMode": "enabled",
+        "ManualAppUpdateOnly": true,
+        "NetworkPrediction": false,
+        "Permissions": {
+            "Camera": {
+                "BlockNewRequests": true,
+                "Locked": false
+            },
+            "Location": {
+                "BlockNewRequests": true,
+                "Locked": false
+            },
+            "Microphone": {
+                "BlockNewRequests": true,
+                "Locked": false
+            },
+            "Notifications": {
+                "BlockNewRequests": true,
+                "Locked": false
+            }
+        },
+        "PostQuantumKeyAgreementEnabled": true,
+        "Preferences": {
+            "browser.newtabpage.activity-stream.feeds.telemetry": {
+                "Status": "locked",
+                "Value": false
+            },
+            "browser.newtabpage.activity-stream.telemetry": {
+                "Status": "locked",
+                "Value": false
+            },
+            "browser.ping-centre.telemetry": {
+                "Status": "locked",
+                "Value": false
+            },
+            "browser.search.serpEventTelemetryCategorization.enabled": {
+                "Status": "locked",
+                "Value": false
+            },
+            "browser.urlbar.quicksuggest.enabled": {
+                "Status": "locked",
+                "Value": false
+            },
+            "browser.urlbar.suggest.quicksuggest.nonsponsored": {
+                "Status": "locked",
+                "Value": false
+            },
+            "browser.urlbar.suggest.quicksuggest.sponsored": {
+                "Status": "locked",
+                "Value": false
+            },
+            "datareporting.policy.dataSubmissionEnabled": {
+                "Status": "locked",
+                "Value": false
+            },
+            "dom.origin-trials.private-attribution.state": {
+                "Status": "locked",
+                "Type": "number",
+                "Value": 2
+            },
+            "dom.private-attribution.submission.enabled": {
+                "Status": "locked",
+                "Value": false
+            },
+            "network.connectivity-service.enabled": {
+                "Status": "locked",
+                "Value": false
+            },
+            "privacy.globalprivacycontrol.enabled": {
+                "Status": "locked",
+                "Value": true
+            }
+        },
+        "TranslateEnabled": false,
+        "DisableSystemAddonUpdate": true,
+        "UserMessaging": {
+            "ExtensionRecommendations": false,
+            "FeatureRecommendations": false,
+            "FirefoxLabs": false,
+            "Locked": true,
+            "MoreFromMozilla": false,
+            "SkipOnboarding": true,
+            "UrlbarInterventions": false,
+            "WhatsNew": false
+        },
+        "ExtensionSettings": {
+            "uBlock0@raymondhill.net": {
+                "install_url": "https://addons.mozilla.org/firefox/downloads/latest/uBlock0@raymondhill.net/latest.xpi",
+                "installation_mode": "normal_installed",
+                "private_browsing": true
+            }
+        }
+    }
+}

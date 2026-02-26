@@ -1,0 +1,52 @@
+From: Sam Macbeth <sam@cliqz.com>
+Date: Fri, 16 Oct 2020 15:47:47 +0200
+Subject: Hide Protection Dashboard link from right burger menu
+
+---
+ browser/base/content/appmenu-viewcache.inc.xhtml | 2 ++
+ browser/base/content/navigator-toolbox.inc.xhtml | 2 ++
+ 2 files changed, 4 insertions(+)
+
+diff --git a/browser/base/content/appmenu-viewcache.inc.xhtml b/browser/base/content/appmenu-viewcache.inc.xhtml
+index ec44a3b1a3..00a039316d 100644
+--- a/browser/base/content/appmenu-viewcache.inc.xhtml
++++ b/browser/base/content/appmenu-viewcache.inc.xhtml
+@@ -14,6 +14,7 @@
+       <toolbaritem id="appMenu-fxa-menu-message"
+                    closemenu="none">
+       </toolbaritem>
++      <!--
+       <toolbaritem id="appMenu-fxa-status2"
+                    closemenu="none"
+                    class="subviewbutton toolbaritem-combined-buttons">
+@@ -29,6 +30,7 @@
+           </vbox>
+         </toolbarbutton>
+       </toolbaritem>
++      -->
+       <toolbarbutton id="appMenu-empty-profiles-button"
+                      class="subviewbutton subviewbutton-nav"
+                      closemenu="none"
+diff --git a/browser/base/content/navigator-toolbox.inc.xhtml b/browser/base/content/navigator-toolbox.inc.xhtml
+index ad1515eb11..5e1ac00c73 100644
+--- a/browser/base/content/navigator-toolbox.inc.xhtml
++++ b/browser/base/content/navigator-toolbox.inc.xhtml
+@@ -205,6 +205,7 @@
+             </box>
+             <!-- Use onclick instead of normal popup= syntax since the popup
+                  code fires onmousedown, and hence eats our favicon drag events. -->
++            <!--
+             <box id="tracking-protection-icon-container" align="center"
+                  role="button"
+                  tooltip="tracking-protection-icon-tooltip">
+@@ -215,6 +216,7 @@
+                 <description id="tracking-protection-icon-tooltip-label" class="tooltip-label"/>
+               </tooltip>
+             </box>
++            -->
+             <box id="identity-box"
+                  class="identity-box"
+                  pageproxystate="invalid">
+-- 
+2.52.0
+
