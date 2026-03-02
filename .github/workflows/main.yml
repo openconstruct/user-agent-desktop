@@ -49,19 +49,28 @@ jobs:
       
       - name: Bootstrap Firefox build environment
         working-directory: mozilla-release
-        run: ./mach bootstrap --no-interactive --application-choice=browser
+        env:
+          MOZ_AUTOMATION: 1
+          MOZCONFIG: ${{ github.workspace }}/brands/Umbra/mozconfig
+        run: python3.12 ./mach bootstrap --application-choice=browser
       
       - name: Configure build
         working-directory: mozilla-release
-        run: ./mach configure
+        env:
+          MOZCONFIG: ${{ github.workspace }}/brands/Umbra/mozconfig
+        run: python3.12 ./mach configure
       
       - name: Build Umbra
         working-directory: mozilla-release
-        run: ./mach build
+        env:
+          MOZCONFIG: ${{ github.workspace }}/brands/Umbra/mozconfig
+        run: python3.12 ./mach build
       
       - name: Create browser package
         working-directory: mozilla-release
-        run: ./mach package
+        env:
+          MOZCONFIG: ${{ github.workspace }}/brands/Umbra/mozconfig
+        run: python3.12 ./mach package
       
       - name: Build distribution packages
         run: ./packaging/linux/build.sh
@@ -92,9 +101,17 @@ jobs:
           body: |
             ## Umbra Browser ${{ github.ref_name }}
             
-            Built automatically via GitHub Actions from source.
+            **Reproducible build from source** - All packages built automatically via GitHub Actions.
             
-            **Build logs:** [View workflow run](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
+            ### Verification
+            - **Source commit:** ${{ github.sha }}
+            - **Build logs:** [View workflow run](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
+            - **Build date:** ${{ github.event.repository.updated_at }}
+            
+            All packages are built from the exact source code tagged at this release. You can verify by:
+            1. Checking out this tag: `git checkout ${{ github.ref_name }}`
+            2. Following the build instructions in the workflow file
+            3. Comparing checksums with your local build
             
             ### Packages
             - **RPM**: For Fedora, RHEL, openSUSE
@@ -102,9 +119,7 @@ jobs:
             - **tar.xz**: Universal Linux archive
             - **Flatpak**: Cross-distro package
             
-            ### Verify Build
-            All packages built from commit: ${{ github.sha }}
-            
-            To build from source yourself, see [BUILD.md](https://github.com/${{ github.repository }}/blob/main/BUILD.md)
+            ### Build from Source
+            See [.github/workflows/main.yml](https://github.com/${{ github.repository }}/blob/main/.github/workflows/main.yml) for the exact build process.
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
