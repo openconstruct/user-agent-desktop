@@ -8,7 +8,7 @@ on:
 
 jobs:
   build-linux:
-    runs-on: ubuntu-22.04  # Use 22.04 for glibc 2.35 compatibility
+    runs-on: ubuntu-22.04
     
     steps:
       - name: Checkout repository
@@ -16,13 +16,13 @@ jobs:
         with:
           submodules: recursive
       
-      - name: Install system dependencies
+      - name: Install all Firefox build dependencies
         run: |
           # Add Python 3.12 PPA
           sudo add-apt-repository -y ppa:deadsnakes/ppa
           sudo apt update
           
-          # Install build dependencies
+          # Install complete Firefox build toolchain
           sudo apt install -y \
             python3.12 \
             python3.12-dev \
@@ -35,21 +35,49 @@ jobs:
             git \
             curl \
             wget \
+            mercurial \
             build-essential \
             libgtk-3-dev \
+            libglib2.0-dev \
             libdbus-glib-1-dev \
+            libdbus-1-dev \
             libpulse-dev \
             libasound2-dev \
-            yasm \
-            libx11-xcb-dev \
             libxt-dev \
+            libx11-xcb-dev \
+            libxrender-dev \
+            libxrandr-dev \
+            libxcursor-dev \
+            libxi-dev \
+            libxext-dev \
+            libxfixes-dev \
+            libxdamage-dev \
+            libxcomposite-dev \
+            libpango1.0-dev \
+            libcairo2-dev \
+            libgdk-pixbuf2.0-dev \
+            libfreetype6-dev \
+            libfontconfig1-dev \
+            yasm \
+            nasm \
             cargo \
             rustc \
+            rust-src \
             clang \
-            libclang-dev
+            libclang-dev \
+            llvm \
+            llvm-dev \
+            cbindgen \
+            libssl-dev \
+            libffi-dev \
+            zip \
+            unzip
           
           # Set Python 3.12 as default
           sudo update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.12 1
+          
+          # Install Python dependencies
+          python3.12 -m pip install --upgrade pip setuptools wheel
       
       - name: Install fern.js dependencies
         run: npm install
@@ -59,13 +87,6 @@ jobs:
           ./fern.js use
           ./fern.js reset
           ./fern.js import-patches
-      
-      - name: Bootstrap Firefox build environment
-        working-directory: mozilla-release
-        env:
-          MOZ_AUTOMATION: 1
-          MOZCONFIG: ${{ github.workspace }}/brands/Umbra/mozconfig
-        run: ./mach bootstrap --application-choice=browser
       
       - name: Configure build
         working-directory: mozilla-release
@@ -119,7 +140,6 @@ jobs:
             ### Verification
             - **Source commit:** ${{ github.sha }}
             - **Build logs:** [View workflow run](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
-            - **Build date:** ${{ github.event.repository.updated_at }}
             
             All packages are built from the exact source code tagged at this release. You can verify by:
             1. Checking out this tag: `git checkout ${{ github.ref_name }}`
