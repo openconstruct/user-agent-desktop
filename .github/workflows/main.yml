@@ -29,6 +29,7 @@ jobs:
             python3.12-venv \
             python3-pip \
             nodejs \
+            python3.12-distutils \ 
             npm \
             rpm \
             dpkg-dev \
@@ -78,7 +79,7 @@ jobs:
           
           # Install Python dependencies
           python3.12 -m pip install --upgrade pip setuptools wheel
-      
+          
       - name: Install fern.js dependencies
         run: npm install
       
