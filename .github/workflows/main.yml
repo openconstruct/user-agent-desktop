@@ -29,7 +29,6 @@ jobs:
             python3.12-venv \
             python3-pip \
             nodejs \
-            python3.12-distutils \ 
             npm \
             rpm \
             dpkg-dev \
@@ -76,10 +75,7 @@ jobs:
           
           # Set Python 3.12 as default
           sudo update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.12 1
-          
-          # Install Python dependencies
-          python3.12 -m pip install --upgrade pip setuptools wheel
-          
+      
       - name: Install fern.js dependencies
         run: npm install
       
