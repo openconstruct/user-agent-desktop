@@ -1,4 +1,4 @@
-aname: Build Umbra Browser
+name: Build Umbra Browser
 
 on:
   push:
