@@ -63,10 +63,11 @@ jobs:
             cargo \
             rustc \
             rust-src \
-            clang \
-            libclang-dev \
-            llvm \
-            llvm-dev \
+            clang-14 \
+            libclang-14-dev \
+            libclang1-14 \
+            llvm-14 \
+            llvm-14-dev \
             cbindgen \
             libssl-dev \
             libffi-dev \
@@ -75,6 +76,11 @@ jobs:
           
           # Set Python 3.12 as default
           sudo update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.12 1
+      
+      - name: Set libclang environment variables
+        run: |
+          echo "LIBCLANG_PATH=/usr/lib/llvm-14/lib" >> $GITHUB_ENV
+          echo "LD_LIBRARY_PATH=/usr/lib/llvm-14/lib:$LD_LIBRARY_PATH" >> $GITHUB_ENV
       
       - name: Install bindgen via cargo
         run: cargo install cbindgen bindgen-cli
@@ -92,12 +98,16 @@ jobs:
         working-directory: mozilla-release
         env:
           MOZCONFIG: ${{ github.workspace }}/brands/Umbra/mozconfig
+          LIBCLANG_PATH: ${{ env.LIBCLANG_PATH }}
+          LD_LIBRARY_PATH: ${{ env.LD_LIBRARY_PATH }}
         run: python3.12 ./mach configure
       
       - name: Build Umbra
         working-directory: mozilla-release
         env:
           MOZCONFIG: ${{ github.workspace }}/brands/Umbra/mozconfig
+          LIBCLANG_PATH: ${{ env.LIBCLANG_PATH }}
+          LD_LIBRARY_PATH: ${{ env.LD_LIBRARY_PATH }}
         run: python3.12 ./mach build
       
       - name: Create browser package
