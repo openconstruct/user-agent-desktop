@@ -72,7 +72,10 @@ jobs:
             libssl-dev \
             libffi-dev \
             zip \
-            unzip
+            unzip \
+            flatpak \
+            flatpak-builder \
+            desktop-file-utils
           
           # Set Python 3.12 as default
           sudo update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.12 1
@@ -85,7 +88,6 @@ jobs:
           tar xf wasi-sdk-${WASI_VERSION}.0-x86_64-linux.tar.gz -C $HOME/.local
           mv $HOME/.local/wasi-sdk-${WASI_VERSION}.0-x86_64-linux $HOME/.local/wasi-sdk
           echo "WASI SDK installed at: $HOME/.local/wasi-sdk"
-          ls -la $HOME/.local/wasi-sdk
       
       - name: Install bindgen via cargo
         run: cargo install cbindgen bindgen-cli
@@ -117,8 +119,11 @@ jobs:
           MOZCONFIG: ${{ github.workspace }}/brands/Umbra/mozconfig
         run: python3.12 ./mach package
       
-      - name: Build distribution packages
+      - name: Build rpm/deb/tar.xz packages
         run: ./packaging/linux/build.sh
+      
+      - name: Build Flatpak package
+        run: ./packaging/linux/build-flatpak.sh
       
       - name: List built packages
         run: ls -lh packaging/out/
