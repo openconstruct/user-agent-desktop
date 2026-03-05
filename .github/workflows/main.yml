@@ -77,23 +77,15 @@ jobs:
           # Set Python 3.12 as default
           sudo update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.12 1
       
-      - name: Debug libclang installation
+      - name: Install WASI SDK
         run: |
-          echo "=== Finding all libclang.so files ==="
-          find /usr -name "libclang.so*" 2>/dev/null || echo "No libclang.so files found"
-          echo ""
-          echo "=== Checking /usr/lib/llvm-14/lib/ ==="
-          ls -la /usr/lib/llvm-14/lib/ 2>/dev/null || echo "Directory does not exist"
-          echo ""
-          echo "=== Checking all llvm directories ==="
-          find /usr/lib -type d -name "llvm*" 2>/dev/null || echo "No llvm directories found"
-          echo ""
-          echo "=== Installed clang packages ==="
-          dpkg -l | grep -E "clang|llvm" | grep "^ii"
-          echo ""
-          echo "=== Checking for libclang*.so in common locations ==="
-          ls -la /usr/lib/x86_64-linux-gnu/libclang*.so* 2>/dev/null || echo "Not in x86_64-linux-gnu"
-          ls -la /usr/lib/libclang*.so* 2>/dev/null || echo "Not in /usr/lib"
+          WASI_VERSION=24
+          mkdir -p $HOME/.local
+          wget https://github.com/WebAssembly/wasi-sdk/releases/download/wasi-sdk-${WASI_VERSION}/wasi-sdk-${WASI_VERSION}.0-x86_64-linux.tar.gz
+          tar xf wasi-sdk-${WASI_VERSION}.0-x86_64-linux.tar.gz -C $HOME/.local
+          mv $HOME/.local/wasi-sdk-${WASI_VERSION}.0-x86_64-linux $HOME/.local/wasi-sdk
+          echo "WASI SDK installed at: $HOME/.local/wasi-sdk"
+          ls -la $HOME/.local/wasi-sdk
       
       - name: Install bindgen via cargo
         run: cargo install cbindgen bindgen-cli
@@ -111,16 +103,12 @@ jobs:
         working-directory: mozilla-release
         env:
           MOZCONFIG: ${{ github.workspace }}/brands/Umbra/mozconfig
-          LIBCLANG_PATH: /usr/lib/llvm-14/lib
-          LD_LIBRARY_PATH: /usr/lib/llvm-14/lib
         run: python3.12 ./mach configure
       
       - name: Build Umbra
         working-directory: mozilla-release
         env:
           MOZCONFIG: ${{ github.workspace }}/brands/Umbra/mozconfig
-          LIBCLANG_PATH: /usr/lib/llvm-14/lib
-          LD_LIBRARY_PATH: /usr/lib/llvm-14/lib
         run: python3.12 ./mach build
       
       - name: Create browser package
