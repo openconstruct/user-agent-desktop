@@ -14,7 +14,6 @@ ac_add_options --enable-proxy-bypass-protection
 ac_add_options --disable-proxy-direct-failover
 ac_add_options --enable-disk-remnant-avoidance
 ac_add_options --disable-system-extension-dirs
-ac_add_options --with-libclang-path=/usr/lib64
 ac_add_options --with-distribution-id=com.umbra.browser
 
 # WASI SDK for wasm sandboxed libraries.
