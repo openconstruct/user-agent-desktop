@@ -125,11 +125,19 @@ jobs:
           MOZCONFIG: ${{ github.workspace }}/brands/Umbra/mozconfig
         run: python3.12 ./mach package
       
-      - name: Build rpm/deb/tar.xz packages
+      - name: Build rpm/deb packages
         run: ./packaging/linux/build.sh
       
       - name: Build Flatpak package
         run: ./packaging/linux/build-flatpak.sh
+      
+      - name: Collect all packages
+        run: |
+          # Copy tar.xz from mozilla build directory to packaging/out
+          cp .cache/firefox/140.8.0esr/firefox-140.8.0/obj-x86_64-pc-linux-gnu/dist/umbra-*.tar.xz packaging/out/
+          
+          # Copy flatpak from subdirectory to packaging/out
+          cp packaging/out/flatpak/org.umbra.Browser-*.flatpak packaging/out/
       
       - name: List built packages
         run: ls -lh packaging/out/
