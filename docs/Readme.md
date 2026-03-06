@@ -1,4 +1,4 @@
-[![Build Status](https://github.com/openconstruct/Umbra/workflows/Build%20Umbra%20Browser/badge.svg)](https://github.com/openconstruct/Umbra/actions)
+[![Build Status](https://github.com/openconstruct/user-agent-desktop/workflows/Build%20Umbra%20Browser/badge.svg)](https://github.com/openconstruct/Umbra/actions)
 
 
 
