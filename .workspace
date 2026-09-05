@@ -7,7 +7,7 @@
     "webcompat",
     "pictureinpicture"
   ],
-  "firefox": "152.2.0esr",
+  "firefox": "153.2.0esr",
   "firefoxSourceUrl": "https://ftp.mozilla.org/pub/firefox/releases/153.2.0esr/source/firefox-153.2.0esr.source.tar.xz",
   "app": "1.1.0",
   "s3bucket": "",
