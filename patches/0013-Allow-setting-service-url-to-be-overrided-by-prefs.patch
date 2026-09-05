@@ -3,21 +3,22 @@ Date: Wed, 23 Sep 2020 17:02:37 +0200
 Subject: Allow setting service url to be overrided by prefs
 
 ---
- services/settings/Utils.sys.mjs      | 4 +---
+ services/settings/Utils.sys.mjs      | 6 ++----
  toolkit/modules/AppConstants.sys.mjs | 2 +-
- 2 files changed, 2 insertions(+), 4 deletions(-)
+ 2 files changed, 3 insertions(+), 5 deletions(-)
 
 diff --git a/services/settings/Utils.sys.mjs b/services/settings/Utils.sys.mjs
-index cbdf07bcda..b5860b823f 100644
 --- a/services/settings/Utils.sys.mjs
 +++ b/services/settings/Utils.sys.mjs
-@@ -97,9 +97,7 @@ const _cdnURLs = {};
+@@ -99,10 +99,8 @@
  
  export var Utils = {
    get SERVER_URL() {
--    return lazy.allowServerURLOverride
--      ? lazy.gServerURL
--      : AppConstants.REMOTE_SETTINGS_SERVER_URL;
+-    return lazy.allowServerURL
+-      ? // eslint-disable-next-line mozilla/valid-lazy
+-        lazy.gServerURL
+-      : AppConstants.REMOTE_SETTINGS_SERVER_URLS[0];
++    // eslint-disable-next-line mozilla/valid-lazy
 +    return lazy.gServerURL;
    },
  
@@ -37,4 +38,3 @@ index a794e82288..80462fbc93 100644
    REMOTE_SETTINGS_DEFAULT_BUCKET:
 -- 
 2.52.0
-

@@ -11,8 +11,8 @@ diff --git a/browser/extensions/newtab/css/activity-stream.css b/browser/extensi
 index 08021dbee2..2a629bd601 100644
 --- a/browser/extensions/newtab/css/activity-stream.css
 +++ b/browser/extensions/newtab/css/activity-stream.css
-@@ -741,6 +741,12 @@ main section {
-   margin-inline-start: 16px;
+@@ -1080,6 +1080,12 @@
+   margin-inline-start: var(--space-large);
    width: 105px;
  }
 +

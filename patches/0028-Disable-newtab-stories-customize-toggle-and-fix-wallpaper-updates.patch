@@ -5,57 +5,52 @@ Subject: Disable newtab stories customize toggle and fix wallpaper
  updates
 
 ---
- .../content-src/components/Base/Base.jsx      |  5 +-
- .../ContentSection/ContentSection.jsx         | 97 ++-----------------
- .../WallpaperCategories.jsx                   | 20 ++--
- 3 files changed, 23 insertions(+), 99 deletions(-)
-
 diff --git a/browser/extensions/newtab/content-src/components/Base/Base.jsx b/browser/extensions/newtab/content-src/components/Base/Base.jsx
-index 8438533ff8..6ba38199d4 100644
 --- a/browser/extensions/newtab/content-src/components/Base/Base.jsx
 +++ b/browser/extensions/newtab/content-src/components/Base/Base.jsx
-@@ -466,7 +466,10 @@ export class BaseContent extends React.PureComponent {
-       const regexRGB = /#([a-fA-F0-9]{6})/;
- 
-       // Override Remote Settings to set custom HEX bg color
+@@ -657,7 +657,10 @@
+         wp => wp.title === selectedWallpaper
+       );
+       // solid color picker
 -      if (selectedWallpaper.includes("solid-color-picker")) {
 +      if (
 +        typeof selectedWallpaper === "string" &&
 +        selectedWallpaper.includes("solid-color-picker")
 +      ) {
-         wallpaper = {
-           theme: wallpaper?.theme || "light",
-           title: "solid-color-picker",
+         const regexRGB = /#([a-fA-F0-9]{6})/;
+         const hex = selectedWallpaper.match(regexRGB)?.[0];
+         url = "";
 diff --git a/browser/extensions/newtab/content-src/components/CustomizeMenu/ContentSection/ContentSection.jsx b/browser/extensions/newtab/content-src/components/CustomizeMenu/ContentSection/ContentSection.jsx
-index 5589f66971..2c5f91ce27 100644
 --- a/browser/extensions/newtab/content-src/components/CustomizeMenu/ContentSection/ContentSection.jsx
 +++ b/browser/extensions/newtab/content-src/components/CustomizeMenu/ContentSection/ContentSection.jsx
-@@ -4,7 +4,6 @@
- 
+@@ -5,7 +5,6 @@
  import React from "react";
- import { actionCreators as ac } from "common/Actions.mjs";
+ import { batch } from "react-redux";
+ import { actionCreators as ac, actionTypes as at } from "common/Actions.mjs";
 -import { SectionsMgmtPanel } from "../SectionsMgmtPanel/SectionsMgmtPanel";
  import { WallpaperCategories } from "../../WallpaperCategories/WallpaperCategories";
- 
- export class ContentSection extends React.PureComponent {
-@@ -14,7 +13,6 @@ export class ContentSection extends React.PureComponent {
+ // @nova-cleanup(move-directory): Update import path after WidgetsManagementPanel moves to components/CustomizeMenu/
+ import { WidgetsManagementPanel } from "content-src/components/Nova/CustomizeMenu/WidgetsManagementPanel/WidgetsManagementPanel";
+@@ -17,7 +16,6 @@
  
      // Refs are necessary for dynamically measuring drawer heights for slide animations
      this.topSitesDrawerRef = React.createRef();
 -    this.pocketDrawerRef = React.createRef();
+     this.widgetsMgmtDrawerRef = React.createRef();
    }
  
-   inputUserEvent(eventSource, eventValue) {
-@@ -49,10 +47,19 @@ export class ContentSection extends React.PureComponent {
+@@ -109,10 +107,19 @@
  
    componentDidMount() {
      this.setDrawerMargins();
+-  }
+-
+-  componentDidUpdate() {
 +    if (this.props.enabledSections.pocketEnabled) {
 +      this.props.setPref("feeds.section.topstories", false);
 +    }
-   }
- 
--  componentDidUpdate() {
++  }
++
 +  componentDidUpdate(prevProps) {
      this.setDrawerMargins();
 +    if (
@@ -67,7 +62,7 @@ index 5589f66971..2c5f91ce27 100644
    }
  
    setDrawerMargins() {
-@@ -60,10 +67,6 @@ export class ContentSection extends React.PureComponent {
+@@ -120,10 +127,6 @@
        `TOP_SITES`,
        this.props.enabledSections.topSitesEnabled
      );
@@ -75,170 +70,196 @@ index 5589f66971..2c5f91ce27 100644
 -      `TOP_STORIES`,
 -      this.props.enabledSections.pocketEnabled
 -    );
+     this.setDrawerMargin(`WIDGETS`, this.props.widgetsEnabled);
    }
  
-   setDrawerMargin(drawerID, isOpen) {
-@@ -71,8 +74,6 @@ export class ContentSection extends React.PureComponent {
- 
-     if (drawerID === `TOP_SITES`) {
-       drawerRef = this.topSitesDrawerRef.current;
--    } else if (drawerID === `TOP_STORIES`) {
--      drawerRef = this.pocketDrawerRef.current;
-     } else {
-       return;
-     }
-@@ -92,23 +93,16 @@ export class ContentSection extends React.PureComponent {
-   render() {
+@@ -133,9 +136,6 @@
+     switch (drawerID) {
+       case `TOP_SITES`:
+         drawerRef = this.topSitesDrawerRef.current;
+-        break;
+-      case `TOP_STORIES`:
+-        drawerRef = this.pocketDrawerRef.current;
+         break;
+       case `WIDGETS`:
+         drawerRef = this.widgetsMgmtDrawerRef.current;
+@@ -164,8 +164,6 @@
      const {
        enabledSections,
+       enabledWidgets,
 -      pocketRegion,
 -      mayHaveInferredPersonalization,
--      mayHaveRecentSaves,
        mayHaveWeather,
-       openPreferences,
-       wallpapersEnabled,
+       mayHaveWidgets,
+       mayHaveTimerWidget,
+@@ -177,12 +175,9 @@
+       wallpapersUserEnabled,
        activeWallpaper,
        setPref,
 -      mayHaveTopicSections,
+       weatherDisplay,
        exitEventFired,
+       onSubpanelToggle,
+-      toggleSectionsMgmtPanel,
+-      showSectionsMgmtPanel,
+       // @nova-cleanup(remove-conditional): Remove novaEnabled
+       novaEnabled,
+       wallpapersEnabled,
+@@ -192,22 +187,10 @@
      } = this.props;
      const {
        topSitesEnabled,
 -      pocketEnabled,
        weatherEnabled,
 -      showInferredPersonalizationEnabled,
--      showRecentSavesEnabled,
        topSitesRowsCount,
      } = enabledSections;
- 
-@@ -191,77 +185,6 @@ export class ContentSection extends React.PureComponent {
-               </div>
-             </moz-toggle>
-           </div>
+     const { timerEnabled, listsEnabled, clocksEnabled } = enabledWidgets;
 -
--          {pocketRegion && (
--            <div id="pocket-section" className="section">
--              <moz-toggle
--                id="pocket-toggle"
--                pressed={pocketEnabled || null}
--                onToggle={this.onPreferenceSelect}
--                aria-describedby="custom-pocket-subtitle"
--                data-preference="feeds.section.topstories"
--                data-eventSource="TOP_STORIES"
--                data-l10n-id="newtab-custom-stories-toggle"
--              >
--                <div slot="nested">
--                  {(mayHaveRecentSaves ||
--                    mayHaveInferredPersonalization ||
--                    mayHaveTopicSections) && (
--                    <div className="more-info-pocket-wrapper">
--                      <div
--                        className="more-information"
--                        ref={this.pocketDrawerRef}
--                      >
--                        {mayHaveInferredPersonalization && (
--                          <div className="check-wrapper" role="presentation">
--                            <input
--                              id="inferred-personalization"
--                              className="customize-menu-checkbox"
--                              disabled={!pocketEnabled}
--                              checked={showInferredPersonalizationEnabled}
--                              type="checkbox"
--                              onChange={this.onPreferenceSelect}
--                              data-preference="discoverystream.sections.personalization.inferred.user.enabled"
--                              data-eventSource="INFERRED_PERSONALIZATION"
--                            />
--                            <label
--                              className="customize-menu-checkbox-label"
--                              htmlFor="inferred-personalization"
--                            >
--                              Recommendations inferred from your activity with
--                              the feed
--                            </label>
--                          </div>
--                        )}
--                        {mayHaveTopicSections && (
--                          <SectionsMgmtPanel exitEventFired={exitEventFired} />
--                        )}
--                        {mayHaveRecentSaves && (
--                          <div className="check-wrapper" role="presentation">
--                            <input
--                              id="recent-saves-pocket"
--                              className="customize-menu-checkbox"
--                              disabled={!pocketEnabled}
--                              checked={showRecentSavesEnabled}
--                              type="checkbox"
--                              onChange={this.onPreferenceSelect}
--                              data-preference="showRecentSaves"
--                              data-eventSource="POCKET_RECENT_SAVES"
--                            />
--                            <label
--                              className="customize-menu-checkbox-label"
--                              htmlFor="recent-saves-pocket"
--                              data-l10n-id="newtab-custom-pocket-show-recent-saves"
--                            />
--                          </div>
--                        )}
+-    // @nova-cleanup(remove-conditional): Remove novaEnabled check and newtab-custom-stories-toggle, default to newtab-recommended-stories-toggle
+-    let pocketToggleL10nId;
+-    if (mayHaveInferredPersonalization) {
+-      pocketToggleL10nId = "newtab-custom-stories-personalized-toggle";
+-    } else if (novaEnabled) {
+-      pocketToggleL10nId = "newtab-recommended-stories-toggle";
+-    } else {
+-      pocketToggleL10nId = "newtab-custom-stories-toggle";
+-    }
+ 
+     // @nova-cleanup(remove-conditional): This conditional adds the toggle for wallpaper visibility.
+     return (
+@@ -380,115 +363,6 @@
+               </moz-toggle>
+             </div>
+ 
+-            {
+-              // @nova-cleanup(remove-conditional): Remove novaEnabled check, keep divider
+-              novaEnabled && mayHaveWidgets && (
+-                <span className="divider" role="separator"></span>
+-              )
+-            }
+-            {
+-              // @nova-cleanup(remove-conditional): Remove novaEnabled check, keep toggle and WidgetsManagementPanel
+-              novaEnabled && mayHaveWidgets && (
+-                <div id="widgets-section" className="section">
+-                  <moz-toggle
+-                    id="widgets-system-toggle"
+-                    pressed={widgetsEnabled || null}
+-                    ontoggle={this.onPreferenceSelect}
+-                    data-preference="widgets.enabled"
+-                    data-event-source="WIDGETS_SYSTEM"
+-                    data-l10n-id="newtab-custom-widget-section-toggle"
+-                  >
+-                    <div slot="nested">
+-                      <div className="more-info-widgets-wrapper">
+-                        <div
+-                          className="more-information"
+-                          ref={this.widgetsMgmtDrawerRef}
+-                        >
+-                          <WidgetsManagementPanel
+-                            enabledSections={enabledSections}
+-                            enabledWidgets={enabledWidgets}
+-                            mayHaveWeather={mayHaveWeather}
+-                            mayHaveTimerWidget={mayHaveTimerWidget}
+-                            mayHaveListsWidget={mayHaveListsWidget}
+-                            mayHaveSportsWidget={mayHaveSportsWidget}
+-                            mayHaveClocksWidget={mayHaveClocksWidget}
+-                            mayHaveWeatherForecast={mayHaveWeatherForecast}
+-                            weatherDisplay={weatherDisplay}
+-                            setPref={setPref}
+-                            onSubpanelToggle={onSubpanelToggle}
+-                            togglePanel={toggleWidgetsManagementPanel}
+-                            showPanel={showWidgetsManagementPanel}
+-                          />
+-                        </div>
 -                      </div>
 -                    </div>
--                  )}
+-                  </moz-toggle>
 -                </div>
--              </moz-toggle>
--            </div>
--          )}
-         </div>
- 
-         <span className="divider" role="separator"></span>
+-              )
+-            }
+-
+-            {
+-              // @nova-cleanup(remove-conditional): Remove novaEnabled check, keep divider
+-              // The pocketRegion check makes sure there is only one divider present if it's false
+-              novaEnabled && pocketRegion && (
+-                <span className="divider" role="separator"></span>
+-              )
+-            }
+-
+-            {pocketRegion && (
+-              <div id="pocket-section" className="section">
+-                <moz-toggle
+-                  id="pocket-toggle"
+-                  pressed={pocketEnabled || null}
+-                  ontoggle={this.onPreferenceSelect}
+-                  data-preference="feeds.section.topstories"
+-                  data-event-source="TOP_STORIES"
+-                  data-l10n-id={pocketToggleL10nId}
+-                >
+-                  <div slot="nested">
+-                    {(mayHaveInferredPersonalization ||
+-                      mayHaveTopicSections) && (
+-                      <div className="more-info-pocket-wrapper">
+-                        <div
+-                          className="more-information"
+-                          ref={this.pocketDrawerRef}
+-                        >
+-                          {mayHaveInferredPersonalization && (
+-                            <div className="check-wrapper" role="presentation">
+-                              <input
+-                                id="inferred-personalization"
+-                                className="customize-menu-checkbox"
+-                                disabled={!pocketEnabled}
+-                                checked={showInferredPersonalizationEnabled}
+-                                type="checkbox"
+-                                onChange={this.onPreferenceSelect}
+-                                data-preference="discoverystream.sections.personalization.inferred.user.enabled"
+-                                data-event-source="INFERRED_PERSONALIZATION"
+-                              />
+-                              <label
+-                                className="customize-menu-checkbox-label"
+-                                htmlFor="inferred-personalization"
+-                                data-l10n-id="newtab-custom-stories-personalized-checkbox-label"
+-                              />
+-                            </div>
+-                          )}
+-                          {mayHaveTopicSections && (
+-                            <SectionsMgmtPanel
+-                              exitEventFired={exitEventFired}
+-                              pocketEnabled={pocketEnabled}
+-                              onSubpanelToggle={onSubpanelToggle}
+-                              togglePanel={toggleSectionsMgmtPanel}
+-                              showPanel={showSectionsMgmtPanel}
+-                              novaEnabled={novaEnabled}
+-                            />
+-                          )}
+-                        </div>
+-                      </div>
+-                    )}
+-                  </div>
+-                </moz-toggle>
+-              </div>
+-            )}
+           </div>
+           {
+             // @nova-cleanup(remove-conditional): Remove this divider once Nova lands
 diff --git a/browser/extensions/newtab/content-src/components/WallpaperCategories/WallpaperCategories.jsx b/browser/extensions/newtab/content-src/components/WallpaperCategories/WallpaperCategories.jsx
-index 250bcc217c..591c1d4442 100644
 --- a/browser/extensions/newtab/content-src/components/WallpaperCategories/WallpaperCategories.jsx
 +++ b/browser/extensions/newtab/content-src/components/WallpaperCategories/WallpaperCategories.jsx
-@@ -55,7 +55,6 @@ export class _WallpaperCategories extends React.PureComponent {
-     this.state = {
-       activeCategory: null,
-       activeCategoryFluentID: null,
--      showColorPicker: false,
-       inputType: "radio",
-       activeId: null,
-       isCustomWallpaperError: false,
-@@ -368,7 +367,7 @@ export class _WallpaperCategories extends React.PureComponent {
-     const prefs = this.props.Prefs.values;
-     const { wallpaperList, categories } = this.props.Wallpapers;
-     const { activeWallpaper } = this.props;
--    const { activeCategory, showColorPicker } = this.state;
-+    const { activeCategory } = this.state;
-     const { activeCategoryFluentID } = this.state;
-     let filteredWallpapers = wallpaperList.filter(
-       wallpaper => wallpaper.category === activeCategory
-@@ -386,20 +385,19 @@ export class _WallpaperCategories extends React.PureComponent {
- 
-     let wallpaperCustomSolidColorHex = null;
- 
--    const selectedWallpaper = prefs["newtabWallpapers.wallpaper"];
-+    const selectedWallpaper = prefs["newtabWallpapers.wallpaper"] || "";
-+    const hasCustomSolidColor =
-+      typeof selectedWallpaper === "string" &&
-+      selectedWallpaper.includes("solid-color-picker");
-+    const showColorPicker =
-+      prefs["newtabWallpapers.customColor.enabled"] || hasCustomSolidColor;
+@@ -487,10 +487,13 @@
+     const selectedWallpaper = prefs["newtabWallpapers.wallpaper"];
  
      // User has previous selected a custom color
 -    if (selectedWallpaper.includes("solid-color-picker")) {
--      this.setState({ showColorPicker: true });
-+    if (hasCustomSolidColor) {
++    if (
++      typeof selectedWallpaper === "string" &&
++      selectedWallpaper.includes("solid-color-picker")
++    ) {
+       showColorPicker = true;
        const regex = /#([a-fA-F0-9]{6})/;
 -      [wallpaperCustomSolidColorHex] = selectedWallpaper.match(regex);
 +      wallpaperCustomSolidColorHex = selectedWallpaper.match(regex)?.[0] || null;
      }
  
--    // Enable custom color select if pref'ed on
--    this.setState({
--      showColorPicker: prefs["newtabWallpapers.customColor.enabled"],
--    });
--
      // Remove last item of solid colors to make space for custom color picker
-     if (
-       prefs["newtabWallpapers.customColor.enabled"] &&
--- 
-2.53.0
-

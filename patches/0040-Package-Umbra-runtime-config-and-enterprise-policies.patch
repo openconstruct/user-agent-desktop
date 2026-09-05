@@ -27,8 +27,8 @@ diff --git a/browser/installer/package-manifest.in b/browser/installer/package-m
 diff --git a/moz.build b/moz.build
 --- a/moz.build
 +++ b/moz.build
-@@ -245,3 +245,5 @@ SPHINX_TREES["content-security"] = "docs/content-security"
- SPHINX_TREES["jsloader"] = "docs/jsloader"
+@@ -258,3 +258,5 @@
+ SPHINX_TREES["ai-agent-tools"] = "docs/ai-agent-tools"
  
  include("build/templates.mozbuild")
 +

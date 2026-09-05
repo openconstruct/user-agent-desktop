@@ -3,14 +3,14 @@ Date: Tue, 12 Sep 2023 16:34:14 +0200
 Subject: Disable help on switching to a new device
 
 ---
- browser/base/content/browser-menubar.inc | 4 ++--
+ browser/base/content/browser-menubar.inc.xhtml | 4 ++--
  1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/browser/base/content/browser-menubar.inc b/browser/base/content/browser-menubar.inc
+diff --git a/browser/base/content/browser-menubar.inc.xhtml b/browser/base/content/browser-menubar.inc.xhtml
 index 01bca4ecb0..55e911a7a1 100644
---- a/browser/base/content/browser-menubar.inc
-+++ b/browser/base/content/browser-menubar.inc
-@@ -449,9 +449,9 @@
+--- a/browser/base/content/browser-menubar.inc.xhtml
++++ b/browser/base/content/browser-menubar.inc.xhtml
+@@ -477,9 +477,9 @@
                            data-l10n-id="menu-help-not-deceptive"
                            appmenu-data-l10n-id="appmenu-help-not-deceptive"
                            hidden="true"/>

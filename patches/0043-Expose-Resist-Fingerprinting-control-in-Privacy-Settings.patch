@@ -24,9 +24,9 @@ index 28e325c938..71450fa027 100644
 +                      </menulist>
 +                    </vbox>
 +                  </hbox>
-               <html:div class="content-blocking-warning info-box-container reload-tabs" hidden="true">
-                 <html:div class="content-blocking-reload-desc-container">
-                   <html:div class="info-icon-container">
+             </vbox>
+           </vbox>
+           <vbox class="privacy-extra-information">
 diff --git a/browser/components/preferences/privacy.js b/browser/components/preferences/privacy.js
 index 5722057a06..04c923da0b 100644
 --- a/browser/components/preferences/privacy.js
@@ -37,17 +37,17 @@ index 5722057a06..04c923da0b 100644
    "privacy.fingerprintingProtection.pbmode",
 +  "privacy.resistFingerprinting",
 +  "privacy.resistFingerprinting.pbmode",
+   "privacy.trackingprotection.allow_list.baseline.enabled",
+   "privacy.trackingprotection.allow_list.convenience.enabled",
  ];
- 
- const PREF_OPT_OUT_STUDIES_ENABLED = "app.shield.optoutstudies.enabled";
 @@ -940,6 +942,7 @@ var gPrivacyPane = {
-     this._showCustomBlockList();
+ 
      this.trackingProtectionReadPrefs();
      this.fingerprintingProtectionReadPrefs();
 +    this.resistFingerprintingReadPrefs();
      this.networkCookieBehaviorReadPrefs();
      this._initTrackingProtectionExtensionControl();
-     this._initThirdPartyCertsToggle();
+     this._ensureTrackingProtectionExceptionListMigration();
 @@ -976,6 +979,14 @@ var gPrivacyPane = {
        "change",
        gPrivacyPane.fingerprintingProtectionReadPrefs.bind(gPrivacyPane)

@@ -838,7 +838,7 @@ index ad10fe2c55..e959c1e4f3 100644
 +        content/browser/aboutUmbra.css                (content/aboutUmbra.css)
          content/browser/logos/etp-mobile.svg          (content/logos/etp-mobile.svg)
          content/browser/logos/fxa-logo.svg            (content/logos/fxa-logo.svg)
-         content/browser/logos/lockwise.svg            (content/logos/lockwise.svg)
+         content/browser/logos/ipprotection-states.svg  (content/logos/ipprotection-states.svg)
 diff --git a/browser/components/about/AboutRedirector.cpp b/browser/components/about/AboutRedirector.cpp
 index 6b97713647..cd286e9049 100644
 --- a/browser/components/about/AboutRedirector.cpp

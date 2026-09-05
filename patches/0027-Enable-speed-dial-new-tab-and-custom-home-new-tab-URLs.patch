@@ -54,8 +54,8 @@ index 883ab42210..d9033e28e8 100644
    HOMEPAGE_PREF: "browser.startup.homepage",
    NEWTAB_ENABLED_PREF: "browser.newtabpage.enabled",
    ACTIVITY_STREAM_PREF_BRANCH: "browser.newtabpage.activity-stream.",
-@@ -64,69 +67,102 @@ var gHomePane = {
-     return false;
+@@ -41,69 +44,102 @@ var gHomePane = {
+     return RESET_DEFAULTS_BUTTON_ENABLED;
    },
  
 +  _isBuiltInNewTabURL(url) {
