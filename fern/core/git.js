@@ -231,7 +231,14 @@ async function importFromPatchFiles(patchesFolder) {
     const patchPath = path.join(patchesFolder, filename);
     if (await fileExists(patchPath)) {
       try {
-        await execa("git", ["apply", "--reverse", "--check", patchPath]);
+        await execa("git", [
+          "apply",
+          "--reverse",
+          "--check",
+          "--ignore-space-change",
+          "--ignore-whitespace",
+          patchPath,
+        ]);
         alreadyAppliedPatches.push(filename);
       } catch (ex) {
         patches.push(patchPath);

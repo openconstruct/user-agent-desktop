@@ -125,7 +125,7 @@ async function use(version, s3bucket, sourceUrl) {
     },
     {
       title: "Populate Build Folder",
-      task: async () => {
+      task: async (ctx, task) => {
         const candidatePaths = [
           path.join(folder, "taskcluster/scripts/misc/fetch-content"),
           path.join(
@@ -143,6 +143,13 @@ async function use(version, s3bucket, sourceUrl) {
         }
 
         if (sourcePath === undefined) {
+          // Newer source archives may omit taskgraph's standalone scripts.
+          // Keep the copy shipped with Fern when no source copy is available.
+          if (await fileExists(path.join(root, "build", "fetch-content"))) {
+            task.title = "Populate Build Folder (using bundled fetch-content)";
+            return;
+          }
+
           throw new Error(
             `Could not find fetch-content script in known locations: ${candidatePaths.join(
               ", "

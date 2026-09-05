@@ -50,7 +50,7 @@ async function getPathToPackageManifest() {
   );
 }
 
-const generateAddonMozBuild = (addonNames) => `
+const generateAddonMozBuild = (addonNames, hasJarManifest) => `
 # -*- Mode: python; indent-tabs-mode: nil; tab-width: 40 -*-
 # vim: set filetype=python:
 # This Source Code Form is subject to the terms of the Mozilla Public
@@ -60,6 +60,7 @@ const generateAddonMozBuild = (addonNames) => `
 DIRS += [
 ${addonNames.map(addonName => `    "${addonName}"`).join(',\n')}
 ]
+${hasJarManifest ? '\nJAR_MANIFESTS += ["jar.mn"]\n' : ''}
 
 if CONFIG["NIGHTLY_BUILD"]:
     DIRS += [
@@ -188,7 +189,10 @@ module.exports = (workspace) => {
 
       await fs.writeFile(
         await getPathToAddonMozBuild(),
-        generateAddonMozBuild(allAddonNames),
+        generateAddonMozBuild(
+          allAddonNames,
+          await fsExtra.pathExists(path.join(await getPathToAddons(), "jar.mn")),
+        ),
       );
 
       await syncPackageManifest(addonNames);
