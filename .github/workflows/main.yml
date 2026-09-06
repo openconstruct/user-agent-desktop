@@ -130,46 +130,10 @@ jobs:
         env:
           MOZCONFIG: ${{ github.workspace }}/brands/Umbra/mozconfig
         run: |
-          # Keep samples in the live log: a runner shutdown may skip later steps.
-          sample_resources() {
-            date -u
-            free -h
-            df -h . /tmp
-            for metric in memory.current memory.peak memory.max memory.events; do
-              if [ -r "/sys/fs/cgroup/$metric" ]; then
-                echo "cgroup $metric:"
-                cat "/sys/fs/cgroup/$metric"
-              fi
-            done
-          }
-          monitor_resources() {
-            while true; do
-              sample_resources
-              sleep 30 &
-              monitor_sleep_pid=$!
-              wait "$monitor_sleep_pid"
-            done
-          }
-          (
-            trap 'kill "${monitor_sleep_pid:-}" 2>/dev/null || true; exit 0' TERM INT
-            monitor_resources
-          ) &
-          monitor_pid=$!
-          cleanup() {
-            build_status=$?
-            trap - EXIT
-            kill "$monitor_pid" 2>/dev/null || true
-            wait "$monitor_pid" 2>/dev/null || true
-            sample_resources || true
-            echo "Recent kernel messages (look for OOM kills):"
-            sudo -n dmesg --ctime | tail -n 80 || true
-            exit "$build_status"
-          }
-          trap cleanup EXIT
-          trap 'echo "Build shell received SIGTERM"; exit 143' TERM
-          trap 'echo "Build shell received SIGINT"; exit 130' INT
-          # Lower peak memory use; this is a mitigation, not a confirmed OOM fix.
-          python3.12 ./mach build -j2
+          # Limit concurrent compilation on the 16 GiB hosted runner.
+          free -h
+          df -h .
+          python3.12 ./mach build -j1
       
       - name: Create browser package
         working-directory: mozilla-release
