@@ -95,8 +95,13 @@ jobs:
           mv $HOME/.local/wasi-sdk-${WASI_VERSION}.0-x86_64-linux $HOME/.local/wasi-sdk
           echo "WASI SDK installed at: $HOME/.local/wasi-sdk"
       
-      - name: Install bindgen via cargo
-        run: cargo install cbindgen bindgen-cli
+        - name: Install bindgen via cargo
+          run: |
+            cargo install cbindgen --version 0.28.0 --locked --force
+            cargo install bindgen-cli --version 0.73.1 --locked
+            cbindgen --version
+            bindgen --version
+
       
       - name: Install fern.js dependencies
         run: npm install
