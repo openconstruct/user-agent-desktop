@@ -1,5 +1,10 @@
 
 ac_add_options --with-app-basename=Umbra
+if [ "$(uname -s)" = "Linux" ] && [ "$(uname -m)" = "x86_64" ]; then
+  # Avoid ambiguous Linux target detection with Rust 1.98's new oe targets.
+  # https://bugzilla.mozilla.org/show_bug.cgi?id=2053518
+  ac_add_options --host=x86_64-unknown-linux-gnu
+fi
 ac_add_options --with-branding=browser/branding/Umbra
 ac_add_options --enable-update-channel=release
 ac_add_options --enable-unverified-updates
@@ -19,7 +24,11 @@ ac_add_options --with-distribution-id=com.umbra.browser
 # WASI SDK for wasm sandboxed libraries.
 # Override with: export WASI_SDK_PATH=/abs/path/to/wasi-sdk
 if [ -z "$WASI_SDK_PATH" ]; then
-  WASI_SDK_PATH="$HOME/.local/wasi-sdk"
+  if [ -d "$HOME/.local/wasi-sdk/share/wasi-sysroot" ]; then
+    WASI_SDK_PATH="$HOME/.local/wasi-sdk"
+  else
+    WASI_SDK_PATH="/opt/wasi-sdk"
+  fi
 fi
 
 ac_add_options --with-wasi-sysroot=$WASI_SDK_PATH/share/wasi-sysroot
