@@ -3,6 +3,7 @@ ac_add_options --with-app-basename=Umbra
 ac_add_options --with-branding=browser/branding/Umbra
 ac_add_options --enable-update-channel=release
 ac_add_options --enable-unverified-updates
+ac_add_options --host=x86_64-unknown-linux-gnu
 
 
 ac_add_options --disable-backgroundtasks
