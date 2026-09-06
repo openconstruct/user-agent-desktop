@@ -98,12 +98,14 @@ jobs:
       
       - name: Install WASI SDK
         run: |
-          WASI_VERSION=24
+          # SDK 25 bundles LLVM 19, the minimum supported by this Firefox source.
+          WASI_VERSION=25
           mkdir -p $HOME/.local
           wget https://github.com/WebAssembly/wasi-sdk/releases/download/wasi-sdk-${WASI_VERSION}/wasi-sdk-${WASI_VERSION}.0-x86_64-linux.tar.gz
           tar xf wasi-sdk-${WASI_VERSION}.0-x86_64-linux.tar.gz -C $HOME/.local
           mv $HOME/.local/wasi-sdk-${WASI_VERSION}.0-x86_64-linux $HOME/.local/wasi-sdk
           echo "WASI SDK installed at: $HOME/.local/wasi-sdk"
+          "$HOME/.local/wasi-sdk/bin/clang" --version
       
       - name: Install bindgen via cargo
         run: cargo install cbindgen bindgen-cli
