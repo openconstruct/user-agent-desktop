@@ -6,6 +6,9 @@ on:
       - 'v*'
   workflow_dispatch:  # Allows manual trigger
 
+permissions:
+  contents: write
+
 jobs:
   build-linux:
     runs-on: ubuntu-22.04
@@ -15,6 +18,12 @@ jobs:
       HOST_CC: /usr/bin/clang-21
       HOST_CXX: /usr/bin/clang++-21
       LIBCLANG_PATH: /usr/lib/llvm-21/lib
+      RUSTUP_TOOLCHAIN: 1.98.0
+      CARGO_BUILD_JOBS: 1
+      MOZCONFIG: ${{ github.workspace }}/.mozconfig-ci
+      OBJ_DIR: ${{ github.workspace }}/mozilla-release/obj-ci
+      TZ: UTC
+      LC_ALL: C.UTF-8
     
     steps:
       - name: Checkout repository
@@ -66,10 +75,6 @@ jobs:
             libfontconfig1-dev \
             yasm \
             nasm \
-            cargo \
-            rustc \
-            rust-src \
-            cbindgen \
             libssl-dev \
             libffi-dev \
             zip \
@@ -83,9 +88,13 @@ jobs:
       
       - name: Install LLVM 21
         run: |
-          curl -fsSL https://apt.llvm.org/llvm.sh -o "$RUNNER_TEMP/llvm.sh"
-          sudo bash "$RUNNER_TEMP/llvm.sh" 21
-          sudo apt-get install -y llvm-21-dev libclang-21-dev lld-21
+          # Use Jammy packages and its native libc, not a Debian sysroot.
+          curl -fsSL --retry 3 https://apt.llvm.org/llvm-snapshot.gpg.key -o "$RUNNER_TEMP/llvm.asc"
+          sudo install -m 0644 "$RUNNER_TEMP/llvm.asc" /usr/share/keyrings/llvm.asc
+          echo 'deb [signed-by=/usr/share/keyrings/llvm.asc] https://apt.llvm.org/jammy/ llvm-toolchain-jammy-21 main' | sudo tee /etc/apt/sources.list.d/llvm21.list
+          sudo apt-get update
+          llvm_version='1:21.1.8~++20251221032842+2078da43e25a-1~exp1~20251221153008.77'
+          sudo apt-get install -y "clang-21=$llvm_version" "llvm-21-dev=$llvm_version" "libclang-21-dev=$llvm_version" "lld-21=$llvm_version"
           echo "/usr/lib/llvm-21/bin" >> "$GITHUB_PATH"
           "$CC" --version
           "$CXX" --version
@@ -98,20 +107,29 @@ jobs:
       
       - name: Install WASI SDK
         run: |
-          # SDK 25 bundles LLVM 19, the minimum supported by this Firefox source.
-          WASI_VERSION=25
-          mkdir -p $HOME/.local
-          wget https://github.com/WebAssembly/wasi-sdk/releases/download/wasi-sdk-${WASI_VERSION}/wasi-sdk-${WASI_VERSION}.0-x86_64-linux.tar.gz
-          tar xf wasi-sdk-${WASI_VERSION}.0-x86_64-linux.tar.gz -C $HOME/.local
-          mv $HOME/.local/wasi-sdk-${WASI_VERSION}.0-x86_64-linux $HOME/.local/wasi-sdk
-          echo "WASI SDK installed at: $HOME/.local/wasi-sdk"
-          "$HOME/.local/wasi-sdk/bin/clang" --version
-      
-      - name: Install bindgen via cargo
-        run: cargo install cbindgen bindgen-cli
-      
+          # Match the successful local 153.2 build; verify the release asset.
+          archive="$RUNNER_TEMP/wasi-sdk-34.0-x86_64-linux.tar.gz"
+          curl -fL --retry 3 https://github.com/WebAssembly/wasi-sdk/releases/download/wasi-sdk-34/wasi-sdk-34.0-x86_64-linux.tar.gz -o "$archive"
+          echo "b761e3a0721dbae9c09a0059e5fdb2bf917d1b4a8a7b430fb3b5aafb0984b2c4  $archive" | sha256sum -c -
+          mkdir -p "$HOME/.local"
+          tar xf "$archive" -C "$HOME/.local"
+          echo "WASI_SDK_PATH=$HOME/.local/wasi-sdk-34.0-x86_64-linux" >> "$GITHUB_ENV"
+          "$HOME/.local/wasi-sdk-34.0-x86_64-linux/bin/clang" --version
+
+      - name: Install pinned Rust and binding tools
+        run: |
+          rustup toolchain install "$RUSTUP_TOOLCHAIN" --profile minimal --component rust-src
+          cargo install cbindgen --version 0.29.4 --locked --force
+          cargo install bindgen-cli --version 0.73.1 --locked --force
+          echo "RUSTC=$(rustup which rustc)" >> "$GITHUB_ENV"
+          echo "CARGO=$(rustup which cargo)" >> "$GITHUB_ENV"
+          echo "CBINDGEN=$HOME/.cargo/bin/cbindgen" >> "$GITHUB_ENV"
+          rustc --version --verbose
+          cargo --version
+          "$HOME/.cargo/bin/cbindgen" --version
+
       - name: Install fern.js dependencies
-        run: npm install
+        run: npm ci
       
       - name: Run fern.js setup
         run: |
@@ -119,16 +137,63 @@ jobs:
           ./fern.js reset
           ./fern.js import-patches
       
+      - name: Add swap for Firefox compilation
+        run: |
+          # Final Rust optimization can exceed RAM even with mach build -j1.
+          # Add capacity without removing the runner's existing swap.
+          swap_file="$RUNNER_TEMP/umbra-build.swap"
+          sudo fallocate -l 24G "$swap_file"
+          sudo chmod 600 "$swap_file"
+          sudo mkswap "$swap_file"
+          sudo swapon "$swap_file"
+          free -h
+          df -h "$RUNNER_TEMP"
+
+      - name: Prepare CI configuration and build record
+        run: |
+          # Honor branding/options while fixing the CI output path and tool source.
+          cat > "$MOZCONFIG" <<EOF
+          . "$GITHUB_WORKSPACE/brands/Umbra/mozconfig"
+          ac_add_options --host=x86_64-unknown-linux-gnu
+          ac_add_options --disable-bootstrap
+          mk_add_options MOZ_OBJDIR="$OBJ_DIR"
+          EOF
+          epoch=$(git show -s --format=%ct HEAD)
+          echo "SOURCE_DATE_EPOCH=$epoch" >> "$GITHUB_ENV"
+          echo "MOZ_BUILD_DATE=$(date -u -d "@$epoch" +%Y%m%d%H%M%S)" >> "$GITHUB_ENV"
+          mkdir -p packaging/out
+          {
+            echo "Source commit: $GITHUB_SHA"
+            cat .workspace
+            sha256sum package-lock.json brands/Umbra/mozconfig
+            shopt -s nullglob
+            input_archives=(.cache/firefox/*/*.source.tar.xz .cache/*/*.zip)
+            if [ "${#input_archives[@]}" -gt 0 ]; then
+              sha256sum "${input_archives[@]}"
+            fi
+            cat /etc/os-release
+            getconf GNU_LIBC_VERSION
+            "$CC" --version
+            "$CXX" --version
+            rustc --version --verbose
+            cargo --version
+            "$CBINDGEN" --version
+            "$WASI_SDK_PATH/bin/clang" --version
+            node --version
+            npm --version
+            dpkg-query -W
+            flatpak list --columns=application,branch,commit
+          } > packaging/out/build-info.txt
+
       - name: Configure build
         working-directory: mozilla-release
-        env:
-          MOZCONFIG: ${{ github.workspace }}/brands/Umbra/mozconfig
-        run: python3.12 ./mach configure
+        run: |
+          python3.12 ./mach configure
+          cat "$OBJ_DIR/.mozconfig" >> "$GITHUB_WORKSPACE/packaging/out/build-info.txt"
+          cat "$OBJ_DIR/config/autoconf.mk" >> "$GITHUB_WORKSPACE/packaging/out/build-info.txt"
       
       - name: Build Umbra
         working-directory: mozilla-release
-        env:
-          MOZCONFIG: ${{ github.workspace }}/brands/Umbra/mozconfig
         run: |
           # Limit concurrent compilation on the 16 GiB hosted runner.
           free -h
@@ -137,11 +202,49 @@ jobs:
       
       - name: Create browser package
         working-directory: mozilla-release
-        env:
-          MOZCONFIG: ${{ github.workspace }}/brands/Umbra/mozconfig
         run: python3.12 ./mach package
       
+      - name: Check Ubuntu 22.04 glibc compatibility
+        run: |
+          python3.12 - <<'PYTHON'
+          import os
+          import pathlib
+          import re
+          import subprocess
+
+          root = pathlib.Path(os.environ["OBJ_DIR"]) / "dist" / "umbra"
+          if not root.is_dir():
+              raise SystemExit(f"Missing packaged browser directory: {root}")
+          incompatible = []
+          checked = 0
+          for path in sorted(root.rglob("*")):
+              if not path.is_file():
+                  continue
+              with path.open("rb") as stream:
+                  if stream.read(4) != b"\x7fELF":
+                      continue
+              checked += 1
+              versions = subprocess.check_output(
+                  ["readelf", "--version-info", str(path)], text=True
+              )
+              needs = versions.partition("Version needs section")[2]
+              for version in set(re.findall(r"Name: GLIBC_([0-9.]+)", needs)):
+                  if tuple(map(int, version.split("."))) > (2, 35):
+                      incompatible.append(f"{path.relative_to(root)}: GLIBC_{version}")
+          if not checked:
+              raise SystemExit("No ELF files found to audit")
+          report = f"Audited {checked} ELF files; maximum allowed glibc requirement: 2.35\n"
+          report += "\n".join(incompatible) if incompatible else "PASS\n"
+          with open("packaging/out/build-info.txt", "a") as stream:
+              stream.write(report)
+          print(report)
+          if incompatible:
+              raise SystemExit("Packaged binaries require glibc newer than Ubuntu 22.04")
+          PYTHON
+
       - name: Build rpm/deb packages
+        env:
+          BUILD_RPM: "1"
         run: ./packaging/linux/build.sh
       
       - name: Build Flatpak package
@@ -150,16 +253,20 @@ jobs:
       - name: Collect all packages
         run: |
           # Copy tar.xz from mozilla build directory to packaging/out
-          cp .cache/firefox/140.8.0esr/firefox-140.8.0/obj-x86_64-pc-linux-gnu/dist/umbra-*.tar.xz packaging/out/
+          cp "$OBJ_DIR"/dist/umbra-*.tar.xz packaging/out/
           
           # Copy flatpak from subdirectory to packaging/out
           cp packaging/out/flatpak/org.umbra.Browser-*.flatpak packaging/out/
       
-      - name: List built packages
-        run: ls -lh packaging/out/
+      - name: Record package checksums
+        working-directory: packaging/out
+        run: |
+          sha256sum *.rpm *.deb *.tar.xz *.flatpak > SHA256SUMS
+          ls -lh
+
       
       - name: Upload artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6 (Node.js 24)
         with:
           name: umbra-linux-packages
           path: |
@@ -167,30 +274,39 @@ jobs:
             packaging/out/*.deb
             packaging/out/*.tar.xz
             packaging/out/*.flatpak
+            packaging/out/SHA256SUMS
+            packaging/out/build-info.txt
           retention-days: 90
+          if-no-files-found: error
+          compression-level: 0
       
       - name: Create GitHub Release
         if: startsWith(github.ref, 'refs/tags/')
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@efb35369e0ad2afab669f228072c1b0d510eae64 # v3 (Node.js 24)
         with:
           files: |
             packaging/out/*.rpm
             packaging/out/*.deb
             packaging/out/*.tar.xz
             packaging/out/*.flatpak
+            packaging/out/SHA256SUMS
+            packaging/out/build-info.txt
           body: |
             ## Umbra Browser ${{ github.ref_name }}
             
-            **Reproducible build from source** - All packages built automatically via GitHub Actions.
+            **Public build from source** - Packages built via GitHub Actions on Ubuntu 22.04. Release downloads are the same files uploaded as workflow artifacts.
             
             ### Verification
             - **Source commit:** ${{ github.sha }}
             - **Build logs:** [View workflow run](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
             
-            All packages are built from the exact source code tagged at this release. You can verify by:
-            1. Checking out this tag: `git checkout ${{ github.ref_name }}`
-            2. Following the build instructions in the workflow file
-            3. Comparing checksums with your local build
+            Download SHA256SUMS and the packages into the same directory, then run:
+            `sha256sum --check --ignore-missing SHA256SUMS`
+
+            For comparison with the public build, download the workflow artifact and compare
+            its SHA256SUMS with the release copy. build-info.txt records the build environment.
+            Matching hashes verify identical package bytes; independent rebuilds are not yet
+            guaranteed to produce identical hashes.
             
             ### Packages
             - **RPM**: For Fedora, RHEL, openSUSE
@@ -199,6 +315,6 @@ jobs:
             - **Flatpak**: Cross-distro package
             
             ### Build from Source
-            See [.github/workflows/main.yml](https://github.com/${{ github.repository }}/blob/main/.github/workflows/main.yml) for the exact build process.
+            See [.github/workflows/main.yml](https://github.com/${{ github.repository }}/blob/${{ github.sha }}/.github/workflows/main.yml) for the exact build process.
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
