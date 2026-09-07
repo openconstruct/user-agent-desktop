@@ -182,7 +182,11 @@ jobs:
             node --version
             npm --version
             dpkg-query -W
-            flatpak list --columns=application,branch,commit
+            flatpak list --system --columns=application,branch
+            for ref in org.freedesktop.Platform//24.08 org.freedesktop.Sdk//24.08; do
+              echo "Flatpak commit for $ref:"
+              flatpak info --system --show-commit "$ref"
+            done
           } > packaging/out/build-info.txt
 
       - name: Configure build
