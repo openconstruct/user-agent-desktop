@@ -193,8 +193,14 @@ jobs:
         working-directory: mozilla-release
         run: |
           python3.12 ./mach configure
-          cat "$OBJ_DIR/.mozconfig" >> "$GITHUB_WORKSPACE/packaging/out/build-info.txt"
-          cat "$OBJ_DIR/config/autoconf.mk" >> "$GITHUB_WORKSPACE/packaging/out/build-info.txt"
+          # The objdir .mozconfig copy is created during build, not configure.
+          cat "$MOZCONFIG" >> "$GITHUB_WORKSPACE/packaging/out/build-info.txt"
+          cat "$GITHUB_WORKSPACE/brands/Umbra/mozconfig" >> "$GITHUB_WORKSPACE/packaging/out/build-info.txt"
+          for record in "$OBJ_DIR/.mozconfig.json" "$OBJ_DIR/config/autoconf.mk"; do
+            if [ -f "$record" ]; then
+              cat "$record" >> "$GITHUB_WORKSPACE/packaging/out/build-info.txt"
+            fi
+          done
       
       - name: Build Umbra
         working-directory: mozilla-release
